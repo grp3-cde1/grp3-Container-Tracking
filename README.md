@@ -9,3 +9,9 @@ Der fachliche Kontext stammt aus der Logistik: Während eines Containertransport
 Ziel des Projekts ist es, auf Basis dieser Daten verschiedene Werkzeuge in Python zu entwickeln.
 
 ---
+
+## Projektziele
+- Transportdaten aus CSV-Dateien verarbeiten
+- abgeschlossene Transporte retrospektiv analysieren
+- Live-Daten eines aktuellen Transports verarbeiten
+- Transportdaten verständlich visualisieren
