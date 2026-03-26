@@ -3,6 +3,20 @@ import requests
 import pandas as pd
 import folium
 #import geopandas as gpd
+import matplotlib.pyplot as plt
+
+# Import einzelner Module
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate
+from reportlab.platypus import Paragraph
+from reportlab.platypus import Spacer
+from reportlab.lib.units import cm
+from reportlab.lib.styles import getSampleStyleSheet
+
+# Erstellen von Unterordnern falls noch nicht vorhanden
+os.makedirs("data", exist_ok=True)
+os.makedirs("maps", exist_ok=True)
+os.makedirs("reports", exist_ok=True)
 
 # Grenzwerte definieren 
 TEMP_MIN = 15
@@ -179,13 +193,36 @@ if response_container.status_code == 200:
                     ).add_to(m)
 
                 # Filename der Map erstellen
-                os.makedirs("maps", exist_ok=True)
                 map_filename = f"maps/{chosen_container}_{chosen_route}_map.html"
                 m.save(map_filename)
 
                 # Ausgabe wo die Datei gespeichert wurde
                 print(f"Karte gespeichert als {map_filename}")
                 print("Öffne die HTML-Datei im Browser.")
+
+                # PDF erstellen
+                pdf_path = f"reports/{chosen_route}_report.pdf"
+                doc = SimpleDocTemplate(pdf_path, pagesize=A4)
+
+                styles = getSampleStyleSheet()
+                story = []
+
+                start_time = track_df["timestamp"].min()
+                end_time = track_df["timestamp"].max()
+
+                date_str = start_time.strftime("%d.%m.%Y")
+                time_range_str = f"{start_time.strftime('%H:%M')} - {end_time.strftime('%H:%M')}"
+
+                story.append(Paragraph("Retrospektiver Bericht", styles["Title"]))
+                story.append(Spacer(1, 0.5 * cm))
+                story.append(Paragraph(f"Route: {chosen_route}", styles["Normal"]))
+                story.append(Paragraph(f"Datum: {date_str}", styles["Normal"]))
+                story.append(Paragraph(f"Uhrzeit: {time_range_str}", styles["Normal"]))
+                story.append(Paragraph(f"Container: {chosen_container}", styles["Normal"]))
+
+                doc.build(story)
+
+                print(f"PDF gespeichert: {pdf_path}")
 
 
 
@@ -199,4 +236,6 @@ if response_container.status_code == 200:
 
 else:
     print("Fehler beim Abrufen der Container: ", response_container.status_code)
+
+
 
