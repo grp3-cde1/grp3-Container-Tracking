@@ -1,40 +1,43 @@
-import pandas as pd
-import os
-import requests
+# import pandas as pd
 
-# Basis-URL der API
+# track_df = pd.read_csv('grp3-Container-Tracking/data/luzern-horw.csv', header=None, names=["timestamp", "latitude", "longitude", "temperature", "humidity"], index_col="timestamp")
+
+# print(track_df['temperature'].median())
+
+import requests
+import pandas as pd
+import geopandas as gpd
+import matplotlib.pyplot as plt
+
+# Grenzwerte definieren 
+TEMP_MIN = 15
+TEMP_MAX = 26
+HUM_MAX = 72
+
+
 url = 'https://fl-17-240.zhdk.cloud.switch.ch/'
 
-# Anfrage: Liste aller Container abrufen
 response_container = requests.get(f"{url}containers")
 
-# Prüfen, ob Anfrage erfolgreich war
 if response_container.status_code == 200:
     data_container = response_container.json()
 
     print("Verfügbare Container:")
     print("--------------------")
-
-    # Container aus der Antwort holen
     containers = data_container.get("containers", [])
 
-    # Container nummeriert anzeigen
     for i, container in enumerate(containers, start=1):
         print(f"{i}. {container}")
 
     try:
-        # Benutzer wählt Container (Index anpassen, da Liste bei 0 beginnt)
         index = int(input("Wähle einen Container (Nummer): ")) - 1
         chosen_container = containers[index]
     except (ValueError, IndexError):
-        # Fehler bei ungültiger Eingabe
         print("Ungültige Auswahl.")
         exit()
 
     if chosen_container in containers:
         print(f"\nContainer '{chosen_container}' gewählt.")
-
-        # Anfrage: Routen für gewählten Container abrufen
         response_route = requests.get(f"{url}containers/{chosen_container}/routes")
 
         if response_route.status_code == 200:
@@ -43,15 +46,12 @@ if response_container.status_code == 200:
             print("\nVerfügbare Routen:")
             print("--------------------")
 
-            # Routen aus der Antwort holen
             routes = data_route.get("routes", [])
 
-            # Routen nummeriert anzeigen
             for i, route in enumerate(routes, start=1):
                 print(f"{i}. {route}")
 
             try:
-                # Benutzer wählt Route
                 index = int(input("Wähle eine Route (Nummer): ")) - 1
                 chosen_route = routes[index]
             except (ValueError, IndexError):
@@ -59,72 +59,63 @@ if response_container.status_code == 200:
                 exit()
 
             if chosen_route in routes:
-                # Dateiname für CSV festlegen
-                filename = f"data/{chosen_container}_{chosen_route}.csv"
+                csv_url = f"{url}files/{chosen_route}.csv?path=../data/migros/{chosen_container}/{chosen_route}.csv"
+                response_csv = requests.get(csv_url)
 
-                download_file = True
+                if response_csv.status_code == 200:
+                    filename = f"data/{chosen_container}_{chosen_route}.csv"
 
-                # Prüfen, ob Datei schon existiert
-                if os.path.exists(filename):
-                    answer = input(f"Datei '{filename}' exisitiert bereits. Neu herunterladen? (j/n): ").strip().lower()
-                    if answer == "n":
-                        download_file = False
-                        print("Download übersprungen")
+                    with open(filename, "wb") as f:
+                        f.write(response_csv.content)
 
-                if download_file:
-                    # URL zur CSV-Datei bauen
-                    csv_url = f"{url}files/{chosen_route}.csv?path=../data/migros/{chosen_container}/{chosen_route}.csv"
-                    response_csv = requests.get(csv_url)
+                    print(f"CSV gespeichert als {filename}")
 
-                    # Prüfen, ob Download erfolgreich war
-                    if response_csv.status_code == 200:
-                        # Datei speichern (binär, da Download)
-                        with open(filename, "wb") as f:
-                            f.write(response_csv.content)
+                    # CSV-Datei in einen Pandas-DataFrame einlesen und Spaltennamen setzen
+                    track_df = pd.read_csv(
+                        filename,
+                        header=None,
+                        names=["timestamp", "latitude", "longitude", "temperature", "humidity"]
+                        )
+                    ## CSV-Datei in einen Pandas-DataFrame einlesen und Spaltennamen setzen
+                    track_df["timestamp"] = pd.to_datetime(track_df["timestamp"])
 
-                        print(f"CSV gespeichert als {filename}")
-                    else:
-                        print(f"Fehler beim Speichern des CSV:", response_csv.status_code)
-                
-                # CSV in DataFrame laden
-                route_df = pd.read_csv(
-                    filename,
-                    header=None,
-                    names=["timestamp", "latitude", "longitude", "temperature", "humidity"],
-                )
+                    # Erstellen neuer Spalte und Prüfen, ob Temperatur unter Minimum oder über Maximum liegt
+                    track_df["temp_violation"] = ( 
+                        (track_df["temperature"] < TEMP_MIN) | 
+                        (track_df["temperature"] > TEMP_MAX)
+                    )
 
-                # Überblick
-                print("\nErste 5 Zeilen")
-                print("--------------------")
-                print(route_df.head())
+                    # Erstellen neuer Spalte und prüfen, ob Feuchtigkeit über dem Maximum liegt
+                    track_df["humidity_violation"] = track_df["humidity"] > HUM_MAX
 
-                print("\nSpaltennamen:")
-                print("--------------------")
-                print(route_df.columns)
+                    # Erstellen neuer Spalte und prüfen ob einer der beiden Grenzwert verletzt wurde
+                    track_df["any_violation"] = ( 
+                        track_df["temp_violation"] |
+                        track_df["humidity_violation"]
+                    )
 
-                print("\nDataframe Info:")
-                print("--------------------")
-                route_df.info()
+                    # Erstellen einer GeoPandas Tabelle
+                    track_gdf = gpd.GeoDataFrame(
+                        track_df,
+                        geometry=gpd.points_from_xy(track_df["longitude"], track_df["latitude"]),
+                        crs="EPSG:4326"
+                    )
 
-                # timestamp in Datetime umwandeln
-                route_df["timestamp"] = pd.to_datetime(route_df["timestamp"])
+                    # Erstellen und anzeigen der Karte
+                    track_gdf.plot(figsize=(10, 8))
+                    plt.show()
 
-                # timestamp als Index setzen
-                route_df = route_df.set_index("timestamp")
 
-                print("\nDataframe mit 'timestamp' als Index:")
-                print("--------------------")
-                print(route_df.head())
-
-                # Anzahl Messpunkte auslesen
-                print("\nAnzahl Messpunkte:")
-                print("--------------------")
-
+                else:
+                    print(f"Fehler beim Speichern des CSV:", response_csv.status_code)
             else:
                 print("Bitte wähle eine Route aus dem Menü aus.")
         else:
             print("Fehler beim Abrufen der Routen:", response_route.status_code)
+
     else:
         print("Bitte wähle einen Container aus dem Menü aus.")
+
 else:
     print("Fehler beim Abrufen der Container: ", response_container.status_code)
+
