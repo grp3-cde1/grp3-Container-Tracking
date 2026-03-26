@@ -17,10 +17,15 @@ if response_container.status_code == 200:
     print("--------------------")
     containers = data_container.get("containers", [])
 
-    for container in containers:
-        print(container)
+    for i, container in enumerate(containers, start=1):
+        print(f"{i}. {container}")
 
-    chosen_container = input("Wähle einen Container aus: ")
+    try:
+        index = int(input("Wähle einen Container (Nummer): ")) - 1
+        chosen_container = containers[index]
+    except (ValueError, IndexError):
+        print("Ungültige Auswahl.")
+        exit()
 
     if chosen_container in containers:
         print(f"\nContainer '{chosen_container}' gewählt.")
@@ -33,15 +38,18 @@ if response_container.status_code == 200:
 
             print("\nVerfügbare Routen:")
             print("--------------------")
-            for route in listed_routes:
-                print(route)
 
-            chosen_route = input("Wähle eine Route aus: ")
-            
             routes = data_route.get("routes", [])
 
-            for route in routes:
-                print(route)
+            for i, route in enumerate(routes, start=1):
+                print(f"{i}. {route}")
+
+            try:
+                index = int(input("Wähle eine Route (Nummer): ")) - 1
+                chosen_route = routes[index]
+            except (ValueError, IndexError):
+                print("Ungültige Auswahl.")
+                exit()
 
             if chosen_route in listed_routes:
                 print("True")
