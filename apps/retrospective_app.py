@@ -33,8 +33,6 @@ if response_container.status_code == 200:
 
         if response_route.status_code == 200:
             data_route = response_route.json()
-            print(data_route)
-            listed_routes = data_route["routes"]
 
             print("\nVerfügbare Routen:")
             print("--------------------")
@@ -51,8 +49,19 @@ if response_container.status_code == 200:
                 print("Ungültige Auswahl.")
                 exit()
 
-            if chosen_route in listed_routes:
-                print("True")
+            if chosen_route in routes:
+                csv_url = f"{url}files/{chosen_route}.csv?path=../data/migros/{chosen_container}/{chosen_route}.csv"
+                response_csv = requests.get(csv_url)
+
+                if response_csv.status_code == 200:
+                    filename = f"data/{chosen_container}_{chosen_route}.csv"
+
+                    with open(filename, "wb") as f:
+                        f.write(response_csv.content)
+
+                    print(f"CSV gespeichert als {filename}")
+                else:
+                    print(f"Fehler beim Speichern des CSV:", response_csv.status_code)
             else:
                 print("Bitte wähle eine Route aus dem Menü aus.")
         else:
