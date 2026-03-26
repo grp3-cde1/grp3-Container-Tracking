@@ -1,14 +1,8 @@
-# import pandas as pd
-
-# track_df = pd.read_csv('grp3-Container-Tracking/data/luzern-horw.csv', header=None, names=["timestamp", "latitude", "longitude", "temperature", "humidity"], index_col="timestamp")
-
-# print(track_df['temperature'].median())
-
+import os
 import requests
 import pandas as pd
-import geopandas as gpd
-import matplotlib.pyplot as plt
-import os
+import folium
+#import geopandas as gpd
 
 # Grenzwerte definieren 
 TEMP_MIN = 15
@@ -126,15 +120,74 @@ if response_container.status_code == 200:
                 )
 
                 # Erstellen einer GeoPandas Tabelle
-                track_gdf = gpd.GeoDataFrame(
-                    track_df,
-                    geometry=gpd.points_from_xy(track_df["longitude"], track_df["latitude"]),
-                    crs="EPSG:4326"
-                )
+                #track_gdf = gpd.GeoDataFrame(
+                #    track_df,
+                #    geometry=gpd.points_from_xy(track_df["longitude"], track_df["latitude"]),
+                #    crs="EPSG:4326"
+                #)
 
                 # Erstellen und anzeigen der Karte
-                track_gdf.plot(figsize=(10, 8))
-                plt.show()
+                #track_gdf.plot(figsize=(10, 8))
+                #plt.show()
+
+                # Mittelpunkt der Karte berechnen
+                center_lat = track_df["latitude"].mean()
+                center_lon = track_df["longitude"].mean()
+
+                # Karte erstellen (Folium)
+                m = folium.Map(
+                    location=[center_lat, center_lon],
+                    zoom_start=12,
+                    tiles="OpenStreetMap"
+                )
+
+                # Route einzeichnen
+                coordinates = track_df[["latitude", "longitude"]].values.tolist()
+
+                folium.PolyLine(
+                    coordinates,
+                    color="blue",
+                    weight=4,
+                    opacity=0.8,
+                    tooltip="Route"
+                ).add_to(m)
+
+                # Punkte einzeln der Map hinzufügen
+
+                for index, row in track_df.iterrows():
+                    if row["any_violation"]:
+                        color = "red"
+                    else:
+                        color = "green"
+
+                    popup_text = (
+                        f"Zeit: {row['timestamp']}<br>"
+                        f"Temperatur: {row['temperature']} °C<br>"
+                        f"Feuchtigkeit: {row['humidity']} %<br>"
+                        f"Temp-Verletzung: {row['temp_violation']}<br>"
+                        f"Humidity-Verletzung: {row['humidity_violation']}"
+                    )
+
+                    folium.CircleMarker(
+                        location=[row["latitude"], row["longitude"]],
+                        radius=5,
+                        color=color,
+                        fill=True,
+                        fill_color=color,
+                        fill_opacity=0.8,
+                        popup=folium.Popup(popup_text, max_width=300)
+                    ).add_to(m)
+
+                # Filename der Map erstellen
+                os.makedirs("maps", exist_ok=True)
+                map_filename = f"maps/{chosen_container}_{chosen_route}_map.html"
+                m.save(map_filename)
+
+                # Ausgabe wo die Datei gespeichert wurde
+                print(f"Karte gespeichert als {map_filename}")
+                print("Öffne die HTML-Datei im Browser.")
+
+
 
             else:
                 print("Bitte wähle eine Route aus dem Menü aus.")
