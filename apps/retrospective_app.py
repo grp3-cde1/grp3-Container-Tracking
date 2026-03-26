@@ -100,44 +100,42 @@ if response_container.status_code == 200:
                         print(f"CSV gespeichert als {filename}")
                     else:
                         print(f"Fehler beim Speichern des CSV:", response_csv.status_code)
-                    # CSV-Datei in einen Pandas-DataFrame einlesen und Spaltennamen setzen
-                    track_df = pd.read_csv(
-                        filename,
-                        header=None,
-                        names=["timestamp", "latitude", "longitude", "temperature", "humidity"]
-                        )
-                    ## CSV-Datei in einen Pandas-DataFrame einlesen und Spaltennamen setzen
-                    track_df["timestamp"] = pd.to_datetime(track_df["timestamp"])
 
-                    # Erstellen neuer Spalte und Prüfen, ob Temperatur unter Minimum oder über Maximum liegt
-                    track_df["temp_violation"] = ( 
-                        (track_df["temperature"] < TEMP_MIN) | 
-                        (track_df["temperature"] > TEMP_MAX)
+                # CSV-Datei in einen Pandas-DataFrame einlesen und Spaltennamen setzen
+                track_df = pd.read_csv(
+                    filename,
+                    header=None,
+                    names=["timestamp", "latitude", "longitude", "temperature", "humidity"]
                     )
+                ## CSV-Datei in einen Pandas-DataFrame einlesen und Spaltennamen setzen
+                track_df["timestamp"] = pd.to_datetime(track_df["timestamp"])
 
-                    # Erstellen neuer Spalte und prüfen, ob Feuchtigkeit über dem Maximum liegt
-                    track_df["humidity_violation"] = track_df["humidity"] > HUM_MAX
+                # Erstellen neuer Spalte und Prüfen, ob Temperatur unter Minimum oder über Maximum liegt
+                track_df["temp_violation"] = ( 
+                    (track_df["temperature"] < TEMP_MIN) | 
+                    (track_df["temperature"] > TEMP_MAX)
+                )
 
-                    # Erstellen neuer Spalte und prüfen ob einer der beiden Grenzwert verletzt wurde
-                    track_df["any_violation"] = ( 
-                        track_df["temp_violation"] |
-                        track_df["humidity_violation"]
-                    )
+                # Erstellen neuer Spalte und prüfen, ob Feuchtigkeit über dem Maximum liegt
+                track_df["humidity_violation"] = track_df["humidity"] > HUM_MAX
 
-                    # Erstellen einer GeoPandas Tabelle
-                    track_gdf = gpd.GeoDataFrame(
-                        track_df,
-                        geometry=gpd.points_from_xy(track_df["longitude"], track_df["latitude"]),
-                        crs="EPSG:4326"
-                    )
+                # Erstellen neuer Spalte und prüfen ob einer der beiden Grenzwert verletzt wurde
+                track_df["any_violation"] = ( 
+                    track_df["temp_violation"] |
+                    track_df["humidity_violation"]
+                )
 
-                    # Erstellen und anzeigen der Karte
-                    track_gdf.plot(figsize=(10, 8))
-                    plt.show()
+                # Erstellen einer GeoPandas Tabelle
+                track_gdf = gpd.GeoDataFrame(
+                    track_df,
+                    geometry=gpd.points_from_xy(track_df["longitude"], track_df["latitude"]),
+                    crs="EPSG:4326"
+                )
 
+                # Erstellen und anzeigen der Karte
+                track_gdf.plot(figsize=(10, 8))
+                plt.show()
 
-                else:
-                    print(f"Fehler beim Speichern des CSV:", response_csv.status_code)
             else:
                 print("Bitte wähle eine Route aus dem Menü aus.")
         else:
