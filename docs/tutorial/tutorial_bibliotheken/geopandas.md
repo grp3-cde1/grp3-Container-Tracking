@@ -29,4 +29,4 @@ Zusätzlich kann man hineinzoomen und einzelne Punkte anklicken.
 
 ## Beispiel einer GeoPandas-Darstellung
 
-![GeoPandas-Diagramm](./diagrams/figure1.png)
+![GeoPandas-Diagramm](../diagrams/Figure_1.png)

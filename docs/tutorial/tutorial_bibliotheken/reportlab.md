@@ -146,4 +146,4 @@ Am Ende wird mit `doc.build(story)` die PDF-Datei mit diesen Inhalten erzeugt.
 Auf diese Weise wird aus der bisherigen Test-PDF ein erster einfacher aber dynamischer Bericht.
 
 Wie folgt wird dieser nun aussehen
-[Beispielbericht öffnen](docs/tutorial/example_reports/report_1.pdf)
+[Beispielbericht öffnen](../example_reports/report_1.pdf)

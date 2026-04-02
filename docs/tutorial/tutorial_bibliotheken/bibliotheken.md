@@ -93,5 +93,5 @@ Im Folgenden findest du eine Übersicht der Bibliotheken sowie das dazugehörige
 
 - [GeoPandas](geopandas.md)
 - [OS](os.md)
-- [RepoprtLab](reportlab.md)
+- [ReportLab](reportlab.md)
 - [Folium](folium.md)
