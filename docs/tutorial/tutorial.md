@@ -17,7 +17,6 @@ Für dieses Tutorial werden grundlegende Python-Kenntnisse vorausgesetzt. Dazu g
 - Dictionaries
 - Schleifen
 - Bedingungen
-- Funktionen
 
 Diese Inhalte werden im Tutorial nicht im Detail neu eingeführt, sondern vorausgesetzt. Sie bilden die Grundlage, auf der die weiteren Schritte aufbauen.
 
@@ -47,6 +46,7 @@ In diesem Zusammenhang werden zentrale Konzepte der objektorientierten Programmi
 
 ### Behandelte Themen
 
+- Funktionen
 - Klassen
 - Objekte
 - Attribute
