@@ -15,10 +15,20 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Image, Table, TableStyle
 from reportlab.lib import colors
 
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
 # Erstellen von Unterordnern falls noch nicht vorhanden
-os.makedirs("data", exist_ok=True)
-os.makedirs("maps", exist_ok=True)
-os.makedirs("reports", exist_ok=True)
+DATA_DIR = BASE_DIR / "data"
+MAPS_DIR = BASE_DIR / "maps"
+REPORTS_DIR = BASE_DIR / "reports"
+CHARTS_DIR = BASE_DIR / "charts"
+
+DATA_DIR.mkdir(exist_ok=True)
+MAPS_DIR.mkdir(exist_ok=True)
+REPORTS_DIR.mkdir(exist_ok=True)
+CHARTS_DIR.mkdir(exist_ok=True)
 
 # Grenzwerte definieren 
 TEMP_MIN = 15
@@ -85,7 +95,7 @@ if response_container.status_code == 200:
                 csv_url = f"{url}files/{chosen_route}.csv?path=../data/migros/{chosen_container}/{chosen_route}.csv"
                 response_csv = requests.get(csv_url)
                 # Dateiname für CSV festlegen
-                filename = f"data/{chosen_container}_{chosen_route}.csv"
+                filename = DATA_DIR / f"{chosen_container}_{chosen_route}.csv"
 
                 download_file = True
 
@@ -146,11 +156,8 @@ if response_container.status_code == 200:
                 #track_gdf.plot(figsize=(10, 8))
                 #plt.show()
                 
-                # Ordner für Diagramme erstellen
-                os.makedirs("charts", exist_ok=True)
-                
                 # Diagramm für Temperaturverlauf
-                temp_chart = f"charts/{chosen_container}_{chosen_route}_temperature.png"
+                temp_chart = CHARTS_DIR / f"{chosen_container}_{chosen_route}_temperature.png"
 
                 plt.figure(figsize=(10, 4))
                 plt.plot(track_df["timestamp"], track_df["temperature"])
@@ -229,7 +236,7 @@ if response_container.status_code == 200:
                     ).add_to(m)
 
                 # Filename der Map erstellen
-                map_filename = f"maps/{chosen_container}_{chosen_route}_map.html"
+                map_filename = MAPS_DIR / f"{chosen_container}_{chosen_route}_map.html"
                 m.save(map_filename)
 
                 # Ausgabe wo die Datei gespeichert wurde
@@ -237,8 +244,8 @@ if response_container.status_code == 200:
                 print("Öffne die HTML-Datei im Browser.")
 
                 # PDF erstellen
-                pdf_path = f"reports/{chosen_route}_report.pdf"
-                doc = SimpleDocTemplate(pdf_path, pagesize=A4)
+                pdf_path = REPORTS_DIR / f"{chosen_route}_report.pdf"
+                doc = SimpleDocTemplate(str(pdf_path), pagesize=A4)
 
                 styles = getSampleStyleSheet()
                 story = []
