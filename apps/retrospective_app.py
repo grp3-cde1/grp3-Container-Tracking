@@ -187,6 +187,40 @@ if response_container.status_code == 200:
                 plt.savefig(hum_chart)
                 plt.close()
 
+                # Histogramm der Temperatur
+                hist_chart = CHARTS_DIR / f"{chosen_container}_{chosen_route}_temperature_hist.png"
+
+                plt.figure(figsize=(8, 4))
+                plt.hist(track_df["temperature"], bins=10)
+                plt.axvline(TEMP_MIN, linestyle="--", label=f"Temp Min ({TEMP_MIN}°C)")
+                plt.axvline(TEMP_MAX, linestyle="--", label=f"Temp Max ({TEMP_MAX}°C)")
+                plt.title("Verteilung der Temperatur")
+                plt.xlabel("Temperatur (°C)")
+                plt.ylabel("Häufigkeit")
+                plt.legend()
+                plt.tight_layout()
+                plt.savefig(hist_chart)
+                plt.close()
+
+
+                # Diagramm der Grenzwertverletzungen
+                violation_chart = CHARTS_DIR / f"{chosen_container}_{chosen_route}_violations.png"
+
+                temp_violations = int(track_df["temp_violation"].sum())
+                humidity_violations = int(track_df["humidity_violation"].sum())
+                no_violations = int((~track_df["any_violation"]).sum())
+
+                labels = ["Temp-Verletzungen", "Feuchtigkeits-Verletzungen", "Ohne Verletzung"]
+                values = [temp_violations, humidity_violations, no_violations]
+
+                plt.figure(figsize=(8, 4))
+                plt.bar(labels, values)
+                plt.title("Grenzwertverletzungen")
+                plt.ylabel("Anzahl Messpunkte")
+                plt.tight_layout()
+                plt.savefig(violation_chart)
+                plt.close()
+
                 # Kennzahlen berechnen
                 avg_temp = track_df["temperature"].mean()
                 min_temp = track_df["temperature"].min()
@@ -308,6 +342,16 @@ if response_container.status_code == 200:
                 # Feuchtigkeitsverlauf
                 story.append(Paragraph("2. Feuchtigkeitsverlauf", styles["Heading2"]))
                 story.append(Image(hum_chart, width=16 * cm, height=6 * cm))
+                story.append(Spacer(1, 0.4 * cm))
+                
+                # Histogramm der Temperatur
+                story.append(Paragraph("3. Temperaturverteilung", styles["Heading2"]))
+                story.append(Image(hist_chart, width=14 * cm, height=6 * cm))
+                story.append(Spacer(1, 0.4 * cm))
+
+                # Diagramm der Grenzwertverletzungen
+                story.append(Paragraph("4. Grenzwertverletzungen", styles["Heading2"]))
+                story.append(Image(violation_chart, width=14 * cm, height=6 * cm))
                 story.append(Spacer(1, 0.4 * cm))
 
                 doc.build(story)
