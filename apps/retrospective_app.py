@@ -255,7 +255,6 @@ if response_container.status_code == 200:
 
                 temp_violations = int(track_df["temp_violation"].sum())
                 humidity_violations = int(track_df["humidity_violation"].sum())
-                any_violations = int(track_df["any_violation"].sum())
                 total_points = len(track_df)
 
 
@@ -347,7 +346,6 @@ if response_container.status_code == 200:
                     ["Maximale Feuchtigkeit", f"{max_humidity:.2f} %"],
                     ["Temperaturverletzungen", str(temp_violations)],
                     ["Feuchtigkeitsverletzungen", str(humidity_violations)],
-                    ["Messpunkte mit irgendeiner Verletzung", str(any_violations)],
                 ]
 
                 table = Table(table_data, colWidths=[8 * cm, 6 * cm])
