@@ -12,6 +12,8 @@ from reportlab.platypus import Paragraph
 from reportlab.platypus import Spacer
 from reportlab.lib.units import cm
 from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import Image, Table, TableStyle
+from reportlab.lib import colors
 
 # Erstellen von Unterordnern falls noch nicht vorhanden
 os.makedirs("data", exist_ok=True)
@@ -143,6 +145,40 @@ if response_container.status_code == 200:
                 # Erstellen und anzeigen der Karte
                 #track_gdf.plot(figsize=(10, 8))
                 #plt.show()
+                
+                # Ordner für Diagramme erstellen
+                os.makedirs("charts", exist_ok=True)
+                
+                # Diagramm für Temperaturverlauf
+                temp_chart = f"charts/{chosen_container}_{chosen_route}_temperature.png"
+
+                plt.figure(figsize=(10, 4))
+                plt.plot(track_df["timestamp"], track_df["temperature"])
+                plt.axhline(TEMP_MIN, linestyle="--", label=f"Temp Min ({TEMP_MIN}°C)")
+                plt.axhline(TEMP_MAX, linestyle="--", label=f"Temp Max ({TEMP_MAX}°C)")
+                plt.title("Temperaturverlauf")
+                plt.xlabel("Zeit")
+                plt.ylabel("Temperatur (°C)")
+                plt.xticks(rotation=45)
+                plt.legend()
+                plt.tight_layout()
+                plt.savefig(temp_chart)
+                plt.close()
+
+
+                # Kennzahlen berechnen
+                avg_temp = track_df["temperature"].mean()
+                min_temp = track_df["temperature"].min()
+                max_temp = track_df["temperature"].max()
+
+                avg_humidity = track_df["humidity"].mean()
+                max_humidity = track_df["humidity"].max()
+
+                temp_violations = int(track_df["temp_violation"].sum())
+                humidity_violations = int(track_df["humidity_violation"].sum())
+                any_violations = int(track_df["any_violation"].sum())
+                total_points = len(track_df)
+
 
                 # Mittelpunkt der Karte berechnen
                 center_lat = track_df["latitude"].mean()
@@ -220,11 +256,37 @@ if response_container.status_code == 200:
                 story.append(Paragraph(f"Uhrzeit: {time_range_str}", styles["Normal"]))
                 story.append(Paragraph(f"Container: {chosen_container}", styles["Normal"]))
 
+                # Kennzahlen gruppieren
+                table_data = [
+                    ["Kennzahl", "Wert"],
+                    ["Anzahl Messpunkte", str(total_points)],
+                    ["Durchschnittstemperatur", f"{avg_temp:.2f} °C"],
+                    ["Minimale Temperatur", f"{min_temp:.2f} °C"],
+                    ["Maximale Temperatur", f"{max_temp:.2f} °C"],
+                    ["Durchschnittliche Feuchtigkeit", f"{avg_humidity:.2f} %"],
+                    ["Maximale Feuchtigkeit", f"{max_humidity:.2f} %"],
+                    ["Temperaturverletzungen", str(temp_violations)],
+                    ["Feuchtigkeitsverletzungen", str(humidity_violations)],
+                    ["Messpunkte mit irgendeiner Verletzung", str(any_violations)],
+                ]
+
+                table = Table(table_data, colWidths=[8 * cm, 6 * cm])
+                table.setStyle(TableStyle([
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
+                    ("PADDING", (0, 0), (-1, -1), 4),
+                ]))
+                story.append(table)
+                story.append(Spacer(1, 0.7 * cm))
+
+                # Temperatur Diagramm einfügen
+                story.append(Paragraph("1. Temperaturverlauf", styles["Heading2"]))
+                story.append(Image(temp_chart, width=16 * cm, height=6 * cm))
+                story.append(Spacer(1, 0.4 * cm))
+
                 doc.build(story)
 
                 print(f"PDF gespeichert: {pdf_path}")
-
-
 
             else:
                 print("Bitte wähle eine Route aus dem Menü aus.")
