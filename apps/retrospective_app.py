@@ -4,6 +4,7 @@ import pandas as pd
 import folium
 #import geopandas as gpd
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 # Import einzelner Module
 from reportlab.lib.pagesizes import A4
@@ -156,11 +157,14 @@ if response_container.status_code == 200:
                 #track_gdf.plot(figsize=(10, 8))
                 #plt.show()
                 
+                sns.set_theme(style="whitegrid")
+                sns.set_palette("bright")
+
                 # Diagramm für Temperaturverlauf
                 temp_chart = CHARTS_DIR / f"{chosen_container}_{chosen_route}_temperature.png"
 
                 plt.figure(figsize=(10, 4))
-                plt.plot(track_df["timestamp"], track_df["temperature"])
+                sns.lineplot(data=track_df, x="timestamp", y="temperature")
                 plt.axhline(TEMP_MIN, linestyle="--", label=f"Temp Min ({TEMP_MIN}°C)")
                 plt.axhline(TEMP_MAX, linestyle="--", label=f"Temp Max ({TEMP_MAX}°C)")
                 plt.title("Temperaturverlauf")
@@ -176,7 +180,7 @@ if response_container.status_code == 200:
                 hum_chart = CHARTS_DIR / f"{chosen_container}_{chosen_route}_humidity.png"
 
                 plt.figure(figsize=(10, 4))
-                plt.plot(track_df["timestamp"], track_df["humidity"])
+                sns.lineplot(data=track_df, x="timestamp", y="humidity")
                 plt.axhline(HUM_MAX, linestyle="--", label=f"Humidity Max ({HUM_MAX}%)")
                 plt.title("Feuchtigkeitsverlauf")
                 plt.xlabel("Zeit")
@@ -191,7 +195,7 @@ if response_container.status_code == 200:
                 hist_chart = CHARTS_DIR / f"{chosen_container}_{chosen_route}_temperature_hist.png"
 
                 plt.figure(figsize=(8, 4))
-                plt.hist(track_df["temperature"], bins=10)
+                sns.histplot(data=track_df, x="temperature", bins=10)
                 plt.axvline(TEMP_MIN, linestyle="--", label=f"Temp Min ({TEMP_MIN}°C)")
                 plt.axvline(TEMP_MAX, linestyle="--", label=f"Temp Max ({TEMP_MAX}°C)")
                 plt.title("Verteilung der Temperatur")
@@ -201,7 +205,6 @@ if response_container.status_code == 200:
                 plt.tight_layout()
                 plt.savefig(hist_chart)
                 plt.close()
-
 
                 # Diagramm der Grenzwertverletzungen
                 violation_chart = CHARTS_DIR / f"{chosen_container}_{chosen_route}_violations.png"
@@ -214,8 +217,9 @@ if response_container.status_code == 200:
                 values = [temp_violations, humidity_violations, no_violations]
 
                 plt.figure(figsize=(8, 4))
-                plt.bar(labels, values)
+                sns.barplot(x=labels, y=values)
                 plt.title("Grenzwertverletzungen")
+                plt.xlabel("")
                 plt.ylabel("Anzahl Messpunkte")
                 plt.tight_layout()
                 plt.savefig(violation_chart)
