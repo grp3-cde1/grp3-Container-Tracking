@@ -221,6 +221,26 @@ if response_container.status_code == 200:
                 plt.savefig(violation_chart)
                 plt.close()
 
+                # Karte der Verletzungen
+                route_chart = CHARTS_DIR / f"{chosen_container}_{chosen_route}_route.png"
+
+                plt.figure(figsize=(6, 6))
+
+                ok_points = track_df[~track_df["any_violation"]]
+                bad_points = track_df[track_df["any_violation"]]
+
+                plt.plot(track_df["longitude"], track_df["latitude"], linewidth=1, label="Route")
+                plt.scatter(ok_points["longitude"], ok_points["latitude"], s=20, label="OK")
+                plt.scatter(bad_points["longitude"], bad_points["latitude"], s=20, label="Verletzung")
+
+                plt.title("Route mit Grenzwertverletzungen")
+                plt.xlabel("Longitude")
+                plt.ylabel("Latitude")
+                plt.legend()
+                plt.tight_layout()
+                plt.savefig(route_chart)
+                plt.close()
+
                 # Kennzahlen berechnen
                 avg_temp = track_df["temperature"].mean()
                 min_temp = track_df["temperature"].min()
@@ -310,6 +330,7 @@ if response_container.status_code == 200:
                 story.append(Paragraph(f"Datum: {date_str}", styles["Normal"]))
                 story.append(Paragraph(f"Uhrzeit: {time_range_str}", styles["Normal"]))
                 story.append(Paragraph(f"Container: {chosen_container}", styles["Normal"]))
+                story.append(Spacer(1, 0.4 * cm))
 
                 # Kennzahlen gruppieren
                 table_data = [
@@ -339,19 +360,24 @@ if response_container.status_code == 200:
                 story.append(Image(temp_chart, width=16 * cm, height=6 * cm))
                 story.append(Spacer(1, 0.4 * cm))
                 
-                # Feuchtigkeitsverlauf
+                # Feuchtigkeitsverlauf einfügen
                 story.append(Paragraph("2. Feuchtigkeitsverlauf", styles["Heading2"]))
                 story.append(Image(hum_chart, width=16 * cm, height=6 * cm))
                 story.append(Spacer(1, 0.4 * cm))
                 
-                # Histogramm der Temperatur
+                # Histogramm der Temperatur einfügen
                 story.append(Paragraph("3. Temperaturverteilung", styles["Heading2"]))
                 story.append(Image(hist_chart, width=14 * cm, height=6 * cm))
                 story.append(Spacer(1, 0.4 * cm))
 
-                # Diagramm der Grenzwertverletzungen
+                # Diagramm der Grenzwertverletzungen einfügen
                 story.append(Paragraph("4. Grenzwertverletzungen", styles["Heading2"]))
                 story.append(Image(violation_chart, width=14 * cm, height=6 * cm))
+                story.append(Spacer(1, 0.4 * cm))
+
+                # Karte der Verletzungen einfügen
+                story.append(Paragraph("5. Route mit markierten Verletzungen", styles["Heading2"]))
+                story.append(Image(route_chart, width=14 * cm, height=14 * cm))
                 story.append(Spacer(1, 0.4 * cm))
 
                 doc.build(story)
