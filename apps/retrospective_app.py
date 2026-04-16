@@ -172,6 +172,20 @@ if response_container.status_code == 200:
                 plt.savefig(temp_chart)
                 plt.close()
 
+                # Feuchtigkeitsverlauf
+                hum_chart = CHARTS_DIR / f"{chosen_container}_{chosen_route}_humidity.png"
+
+                plt.figure(figsize=(10, 4))
+                plt.plot(track_df["timestamp"], track_df["humidity"])
+                plt.axhline(HUM_MAX, linestyle="--", label=f"Humidity Max ({HUM_MAX}%)")
+                plt.title("Feuchtigkeitsverlauf")
+                plt.xlabel("Zeit")
+                plt.ylabel("Feuchtigkeit (%)")
+                plt.xticks(rotation=45)
+                plt.legend()
+                plt.tight_layout()
+                plt.savefig(hum_chart)
+                plt.close()
 
                 # Kennzahlen berechnen
                 avg_temp = track_df["temperature"].mean()
@@ -286,9 +300,14 @@ if response_container.status_code == 200:
                 story.append(table)
                 story.append(Spacer(1, 0.7 * cm))
 
-                # Temperatur Diagramm einfügen
+                # Temperatur-Diagramm einfügen
                 story.append(Paragraph("1. Temperaturverlauf", styles["Heading2"]))
                 story.append(Image(temp_chart, width=16 * cm, height=6 * cm))
+                story.append(Spacer(1, 0.4 * cm))
+                
+                # Feuchtigkeitsverlauf
+                story.append(Paragraph("2. Feuchtigkeitsverlauf", styles["Heading2"]))
+                story.append(Image(hum_chart, width=16 * cm, height=6 * cm))
                 story.append(Spacer(1, 0.4 * cm))
 
                 doc.build(story)
