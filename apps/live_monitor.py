@@ -30,4 +30,4 @@ print("Verbinde mit Broker")
 client.connect(broker, port)
 
 client.loop_forever()
-# python simulator/simulator.py simulator/data/luzern-horw.geojson -c simulator/config-switch.ini
+# python simulator/simulator.py simulator/data/luzern-horw.geojson -c simulator/config-switch.ini 
