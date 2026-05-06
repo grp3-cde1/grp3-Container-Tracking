@@ -109,3 +109,46 @@ CHARTS_DIR = BASE_DIR / "charts"
 REPORTS_DIR = BASE_DIR / "reports"
 ```
 Mit `mkdir(exist_ok=True)` können Ordner automatisch erstellt werden.
+
+---
+
+## REST-API abrufen
+Für HTTP-Anfragen verwenden wir requests.
+
+`response = requests.get(f"{BASE_URL}/containers", timeout=10)`
+Ein Statuscode von 200 bedeutet, dass die Anfrage erfolgreich war.
+
+```python
+if response.status_code != 200:
+    print("Fehler")
+```
+Die Antwort wird mit `.json()` in Python-Daten umgewandelt.
+
+```python
+data = response.json()
+containers = data.get("containers", [])
+```
+
+---
+
+## CSV mit pandas lesen
+Die Transportdaten liegen als CSV-Datei vor.
+
+```python
+data_frame = pd.read_csv(
+    file_path,
+    header=None,
+    names=["timestamp", "latitude", "longitude", "temperature", "humidity"],
+)
+```
+Ein DataFrame ist eine Tabelle in Python.
+
+Die Spalten enthalten:
+
+- Zeitstempel
+- Breitengrad
+- Längengrad
+- Temperatur
+- Feuchtigkeit
+
+---
