@@ -1,401 +1,638 @@
-import os
+from pathlib import Path
+
 import requests
 import pandas as pd
 import folium
-#import geopandas as gpd
 import matplotlib.pyplot as plt
-import seaborn as sns
 
-# Import einzelner Module
-from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate
-from reportlab.platypus import Paragraph
-from reportlab.platypus import Spacer
-from reportlab.lib.units import cm
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import Image, Table, TableStyle
 from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import cm
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle, PageBreak
 
-from pathlib import Path
 
+# Basisordner des Projekts festlegen
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Erstellen von Unterordnern falls noch nicht vorhanden
+# Unterordner für Dateien festlegen
 DATA_DIR = BASE_DIR / "data"
 MAPS_DIR = BASE_DIR / "maps"
-REPORTS_DIR = BASE_DIR / "reports"
 CHARTS_DIR = BASE_DIR / "charts"
+REPORTS_DIR = BASE_DIR / "reports"
 
+# Unterordner erstellen, falls sie noch nicht existieren
 DATA_DIR.mkdir(exist_ok=True)
 MAPS_DIR.mkdir(exist_ok=True)
-REPORTS_DIR.mkdir(exist_ok=True)
 CHARTS_DIR.mkdir(exist_ok=True)
+REPORTS_DIR.mkdir(exist_ok=True)
 
-# Grenzwerte definieren 
+# Basis-URL des Webservice festlegen
+BASE_URL = "https://fl-17-240.zhdk.cloud.switch.ch"
+
+# Grenzwerte für Temperatur und Feuchtigkeit festlegen
 TEMP_MIN = 15
 TEMP_MAX = 26
 HUM_MAX = 72
 
 
-# Basis-URL der API
-url = 'https://fl-17-240.zhdk.cloud.switch.ch/'
+def fetch_containers():
+    # Container vom Webservice abrufen
+    response = requests.get(f"{BASE_URL}/containers", timeout=10)
 
-# Anfrage: Liste aller Container abrufen
-response_container = requests.get(f"{url}containers")
+    # Statuscode der Antwort prüfen
+    if response.status_code != 200:
+        print("Fehler beim Abrufen der Container:", response.status_code)
+        return []
 
-# Prüfen, ob Anfrage erfolgreich war
-if response_container.status_code == 200:
-    data_container = response_container.json()
+    # Antwort in JSON umwandeln
+    data = response.json()
 
-    print("Verfügbare Container:")
-    print("--------------------")
+    # Containerliste aus der Antwort holen
+    containers = data.get("containers", [])
 
-    # Container aus der Antwort holen
-    containers = data_container.get("containers", [])
+    return containers
 
-    # Container nummeriert anzeigen
-    for i, container in enumerate(containers, start=1):
-        print(f"{i}. {container}")
+
+def fetch_routes(container):
+    # Routen für den gewählten Container abrufen
+    response = requests.get(f"{BASE_URL}/containers/{container}/routes", timeout=10)
+
+    # Statuscode der Antwort prüfen
+    if response.status_code != 200:
+        print("Fehler beim Abrufen der Routen:", response.status_code)
+        return []
+
+    # Antwort in JSON umwandeln
+    data = response.json()
+
+    # Routenliste aus der Antwort holen
+    routes = data.get("routes", [])
+
+    return routes
+
+
+def choose_item(title, items):
+    # Titel der Auswahl anzeigen
+    print()
+    print(title)
+    print("-" * len(title))
+
+    # Einträge nummeriert anzeigen
+    for number, item in enumerate(items, start=1):
+        print(f"{number}. {item}")
 
     try:
-        # Benutzer wählt Container (Index anpassen, da Liste bei 0 beginnt)
-        index = int(input("Wähle einen Container (Nummer): ")) - 1
-        chosen_container = containers[index]
+        # Benutzereingabe einlesen
+        index = int(input("Bitte Nummer wählen: ")) - 1
+
+        # Ausgewählten Eintrag zurückgeben
+        return items[index]
+
     except (ValueError, IndexError):
-        # Fehler bei ungültiger Eingabe
+        # Fehler bei ungültiger Eingabe ausgeben
         print("Ungültige Auswahl.")
-        exit()
-
-    if chosen_container in containers:
-        print(f"\nContainer '{chosen_container}' gewählt.")
-
-        # Anfrage: Routen für gewählten Container abrufen
-        response_route = requests.get(f"{url}containers/{chosen_container}/routes")
-
-        if response_route.status_code == 200:
-            data_route = response_route.json()
-            print("\nVerfügbare Routen:")
-            print("--------------------")
-
-            # Routen aus der Antwort holen
-            routes = data_route.get("routes", [])
-
-            # Routen nummeriert anzeigen
-            for i, route in enumerate(routes, start=1):
-                print(f"{i}. {route}")
-
-            try:
-                # Benutzer wählt Route
-                index = int(input("Wähle eine Route (Nummer): ")) - 1
-                chosen_route = routes[index]
-            except (ValueError, IndexError):
-                print("Ungültige Auswahl.")
-                exit()
-
-            if chosen_route in routes:
-                csv_url = f"{url}files/{chosen_route}.csv?path=../data/migros/{chosen_container}/{chosen_route}.csv"
-                response_csv = requests.get(csv_url)
-                # Dateiname für CSV festlegen
-                filename = DATA_DIR / f"{chosen_container}_{chosen_route}.csv"
-
-                download_file = True
-
-                # Prüfen, ob Datei schon existiert
-                if os.path.exists(filename):
-                    answer = input(f"Datei '{filename}' exisitiert bereits. Neu herunterladen? (j/n): ").strip().lower()
-                    if answer == "n":
-                        download_file = False
-                        print("Download übersprungen")
-
-                if download_file:
-                    # URL zur CSV-Datei bauen
-                    csv_url = f"{url}files/{chosen_route}.csv?path=../data/migros/{chosen_container}/{chosen_route}.csv"
-                    response_csv = requests.get(csv_url)
-
-                    # Prüfen, ob Download erfolgreich war
-                    if response_csv.status_code == 200:
-                        # Datei speichern (binär, da Download)
-                        with open(filename, "wb") as f:
-                            f.write(response_csv.content)
-
-                        print(f"CSV gespeichert als {filename}")
-                    else:
-                        print(f"Fehler beim Speichern des CSV:", response_csv.status_code)
-
-                # CSV-Datei in einen Pandas-DataFrame einlesen und Spaltennamen setzen
-                track_df = pd.read_csv(
-                    filename,
-                    header=None,
-                    names=["timestamp", "latitude", "longitude", "temperature", "humidity"]
-                    )
-                ## CSV-Datei in einen Pandas-DataFrame einlesen und Spaltennamen setzen
-                track_df["timestamp"] = pd.to_datetime(track_df["timestamp"])
-
-                # Erstellen neuer Spalte und Prüfen, ob Temperatur unter Minimum oder über Maximum liegt
-                track_df["temp_violation"] = ( 
-                    (track_df["temperature"] < TEMP_MIN) | 
-                    (track_df["temperature"] > TEMP_MAX)
-                )
-
-                # Erstellen neuer Spalte und prüfen, ob Feuchtigkeit über dem Maximum liegt
-                track_df["humidity_violation"] = track_df["humidity"] > HUM_MAX
-
-                # Erstellen neuer Spalte und prüfen ob einer der beiden Grenzwert verletzt wurde
-                track_df["any_violation"] = ( 
-                    track_df["temp_violation"] |
-                    track_df["humidity_violation"]
-                )
-
-                # Erstellen einer GeoPandas Tabelle
-                #track_gdf = gpd.GeoDataFrame(
-                #    track_df,
-                #    geometry=gpd.points_from_xy(track_df["longitude"], track_df["latitude"]),
-                #    crs="EPSG:4326"
-                #)
-
-                # Erstellen und anzeigen der Karte
-                #track_gdf.plot(figsize=(10, 8))
-                #plt.show()
-                
-                sns.set_theme(style="whitegrid")
-                sns.set_palette("bright")
-
-                # Diagramm für Temperaturverlauf
-                temp_chart = CHARTS_DIR / f"{chosen_container}_{chosen_route}_temperature.png"
-
-                plt.figure(figsize=(10, 4))
-                sns.lineplot(data=track_df, x="timestamp", y="temperature")
-                plt.axhline(TEMP_MIN, linestyle="--", label=f"Temp Min ({TEMP_MIN}°C)")
-                plt.axhline(TEMP_MAX, linestyle="--", label=f"Temp Max ({TEMP_MAX}°C)")
-                plt.title("Temperaturverlauf")
-                plt.xlabel("Zeit")
-                plt.ylabel("Temperatur (°C)")
-                plt.xticks(rotation=45)
-                plt.legend()
-                plt.tight_layout()
-                plt.savefig(temp_chart)
-                plt.close()
-
-                # Feuchtigkeitsverlauf
-                hum_chart = CHARTS_DIR / f"{chosen_container}_{chosen_route}_humidity.png"
-
-                plt.figure(figsize=(10, 4))
-                sns.lineplot(data=track_df, x="timestamp", y="humidity")
-                plt.axhline(HUM_MAX, linestyle="--", label=f"Humidity Max ({HUM_MAX}%)")
-                plt.title("Feuchtigkeitsverlauf")
-                plt.xlabel("Zeit")
-                plt.ylabel("Feuchtigkeit (%)")
-                plt.xticks(rotation=45)
-                plt.legend()
-                plt.tight_layout()
-                plt.savefig(hum_chart)
-                plt.close()
-
-                # Histogramm der Temperatur
-                hist_chart = CHARTS_DIR / f"{chosen_container}_{chosen_route}_temperature_hist.png"
-
-                plt.figure(figsize=(8, 4))
-                sns.histplot(data=track_df, x="temperature", bins=10)
-                plt.axvline(TEMP_MIN, linestyle="--", label=f"Temp Min ({TEMP_MIN}°C)")
-                plt.axvline(TEMP_MAX, linestyle="--", label=f"Temp Max ({TEMP_MAX}°C)")
-                plt.title("Verteilung der Temperatur")
-                plt.xlabel("Temperatur (°C)")
-                plt.ylabel("Häufigkeit")
-                plt.legend()
-                plt.tight_layout()
-                plt.savefig(hist_chart)
-                plt.close()
-
-                # Diagramm der Grenzwertverletzungen
-                violation_chart = CHARTS_DIR / f"{chosen_container}_{chosen_route}_violations.png"
-
-                temp_violations = int(track_df["temp_violation"].sum())
-                humidity_violations = int(track_df["humidity_violation"].sum())
-                no_violations = int((~track_df["any_violation"]).sum())
-
-                labels = ["Temp-Verletzungen", "Feuchtigkeits-Verletzungen", "Ohne Verletzung"]
-                values = [temp_violations, humidity_violations, no_violations]
-
-                plt.figure(figsize=(8, 4))
-                sns.barplot(x=labels, y=values)
-                plt.title("Grenzwertverletzungen")
-                plt.xlabel("")
-                plt.ylabel("Anzahl Messpunkte")
-                plt.tight_layout()
-                plt.savefig(violation_chart)
-                plt.close()
-
-                # Karte der Verletzungen
-                route_chart = CHARTS_DIR / f"{chosen_container}_{chosen_route}_route.png"
-
-                plt.figure(figsize=(6, 6))
-
-                ok_points = track_df[~track_df["any_violation"]]
-                bad_points = track_df[track_df["any_violation"]]
-
-                plt.plot(track_df["longitude"], track_df["latitude"], linewidth=1, label="Route")
-                plt.scatter(ok_points["longitude"], ok_points["latitude"], s=20, label="OK")
-                plt.scatter(bad_points["longitude"], bad_points["latitude"], s=20, label="Verletzung")
-
-                plt.title("Route mit Grenzwertverletzungen")
-                plt.xlabel("Longitude")
-                plt.ylabel("Latitude")
-                plt.legend()
-                plt.tight_layout()
-                plt.savefig(route_chart)
-                plt.close()
-
-                # Kennzahlen berechnen
-                avg_temp = track_df["temperature"].mean()
-                min_temp = track_df["temperature"].min()
-                max_temp = track_df["temperature"].max()
-
-                avg_humidity = track_df["humidity"].mean()
-                max_humidity = track_df["humidity"].max()
-
-                temp_violations = int(track_df["temp_violation"].sum())
-                humidity_violations = int(track_df["humidity_violation"].sum())
-                total_points = len(track_df)
-
-
-                # Mittelpunkt der Karte berechnen
-                center_lat = track_df["latitude"].mean()
-                center_lon = track_df["longitude"].mean()
-
-                # Karte erstellen (Folium)
-                m = folium.Map(
-                    location=[center_lat, center_lon],
-                    zoom_start=12,
-                    tiles="OpenStreetMap"
-                )
-
-                # Route einzeichnen
-                coordinates = track_df[["latitude", "longitude"]].values.tolist()
-
-                folium.PolyLine(
-                    coordinates,
-                    color="blue",
-                    weight=4,
-                    opacity=0.8,
-                    tooltip="Route"
-                ).add_to(m)
-
-                # Punkte einzeln der Map hinzufügen
-
-                for index, row in track_df.iterrows():
-                    if row["any_violation"]:
-                        color = "red"
-                    else:
-                        color = "green"
-
-                    popup_text = (
-                        f"Zeit: {row['timestamp']}<br>"
-                        f"Temperatur: {row['temperature']} °C<br>"
-                        f"Feuchtigkeit: {row['humidity']} %<br>"
-                        f"Temp-Verletzung: {row['temp_violation']}<br>"
-                        f"Humidity-Verletzung: {row['humidity_violation']}"
-                    )
-
-                    folium.CircleMarker(
-                        location=[row["latitude"], row["longitude"]],
-                        radius=5,
-                        color=color,
-                        fill=True,
-                        fill_color=color,
-                        fill_opacity=0.8,
-                        popup=folium.Popup(popup_text, max_width=300)
-                    ).add_to(m)
-
-                # Filename der Map erstellen
-                map_filename = MAPS_DIR / f"{chosen_container}_{chosen_route}_map.html"
-                m.save(map_filename)
-
-                # Ausgabe wo die Datei gespeichert wurde
-                print(f"Karte gespeichert als {map_filename}")
-                print("Öffne die HTML-Datei im Browser.")
-
-                # PDF erstellen
-                pdf_path = REPORTS_DIR / f"{chosen_route}_report.pdf"
-                doc = SimpleDocTemplate(str(pdf_path), pagesize=A4)
-
-                styles = getSampleStyleSheet()
-                story = []
-
-                start_time = track_df["timestamp"].min()
-                end_time = track_df["timestamp"].max()
-
-                date_str = start_time.strftime("%d.%m.%Y")
-                time_range_str = f"{start_time.strftime('%H:%M')} - {end_time.strftime('%H:%M')}"
-
-                story.append(Paragraph("Retrospektiver Bericht", styles["Title"]))
-                story.append(Spacer(1, 0.5 * cm))
-                story.append(Paragraph(f"Route: {chosen_route}", styles["Normal"]))
-                story.append(Paragraph(f"Datum: {date_str}", styles["Normal"]))
-                story.append(Paragraph(f"Uhrzeit: {time_range_str}", styles["Normal"]))
-                story.append(Paragraph(f"Container: {chosen_container}", styles["Normal"]))
-                story.append(Spacer(1, 0.4 * cm))
-
-                # Kennzahlen gruppieren
-                table_data = [
-                    ["Kennzahl", "Wert"],
-                    ["Anzahl Messpunkte", str(total_points)],
-                    ["Durchschnittstemperatur", f"{avg_temp:.2f} °C"],
-                    ["Minimale Temperatur", f"{min_temp:.2f} °C"],
-                    ["Maximale Temperatur", f"{max_temp:.2f} °C"],
-                    ["Durchschnittliche Feuchtigkeit", f"{avg_humidity:.2f} %"],
-                    ["Maximale Feuchtigkeit", f"{max_humidity:.2f} %"],
-                    ["Temperaturverletzungen", str(temp_violations)],
-                    ["Feuchtigkeitsverletzungen", str(humidity_violations)],
-                ]
-
-                table = Table(table_data, colWidths=[8 * cm, 6 * cm])
-                table.setStyle(TableStyle([
-                    ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-                    ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
-                    ("PADDING", (0, 0), (-1, -1), 4),
-                ]))
-                story.append(table)
-                story.append(Spacer(1, 0.7 * cm))
-
-                # Temperatur-Diagramm einfügen
-                story.append(Paragraph("1. Temperaturverlauf", styles["Heading2"]))
-                story.append(Image(temp_chart, width=16 * cm, height=6 * cm))
-                story.append(Spacer(1, 0.4 * cm))
-                
-                # Feuchtigkeitsverlauf einfügen
-                story.append(Paragraph("2. Feuchtigkeitsverlauf", styles["Heading2"]))
-                story.append(Image(hum_chart, width=16 * cm, height=6 * cm))
-                story.append(Spacer(1, 0.4 * cm))
-                
-                # Histogramm der Temperatur einfügen
-                story.append(Paragraph("3. Temperaturverteilung", styles["Heading2"]))
-                story.append(Image(hist_chart, width=14 * cm, height=6 * cm))
-                story.append(Spacer(1, 0.4 * cm))
-
-                # Diagramm der Grenzwertverletzungen einfügen
-                story.append(Paragraph("4. Grenzwertverletzungen", styles["Heading2"]))
-                story.append(Image(violation_chart, width=14 * cm, height=6 * cm))
-                story.append(Spacer(1, 0.4 * cm))
-
-                # Karte der Verletzungen einfügen
-                story.append(Paragraph("5. Route mit markierten Verletzungen", styles["Heading2"]))
-                story.append(Image(route_chart, width=14 * cm, height=14 * cm))
-                story.append(Spacer(1, 0.4 * cm))
-
-                doc.build(story)
-
-                print(f"PDF gespeichert: {pdf_path}")
-
-            else:
-                print("Bitte wähle eine Route aus dem Menü aus.")
-        else:
-            print("Fehler beim Abrufen der Routen:", response_route.status_code)
-
-    else:
-        print("Bitte wähle einen Container aus dem Menü aus.")
-
-else:
-    print("Fehler beim Abrufen der Container: ", response_container.status_code)
+        return None
 
 
+def download_csv(container, route):
+    # Lokalen Dateinamen festlegen
+    file_path = DATA_DIR / f"{container}_{route}.csv"
 
+    # Prüfen, ob Datei bereits existiert
+    if file_path.exists():
+        answer = input(f"Datei '{file_path.name}' existiert bereits. Neu herunterladen? (j/n): ")
+
+        # Download überspringen, wenn Benutzer nein wählt
+        if answer.strip().lower() == "n":
+            print("Download übersprungen.")
+            return file_path
+
+    # CSV-URL zusammensetzen
+    csv_url = f"{BASE_URL}/files/{route}.csv?path=../data/migros/{container}/{route}.csv"
+
+    # CSV-Datei vom Webservice abrufen
+    response = requests.get(csv_url, timeout=20)
+
+    # Statuscode der Antwort prüfen
+    if response.status_code != 200:
+        print("Fehler beim CSV-Download:", response.status_code)
+        return None
+
+    # CSV-Datei lokal speichern
+    with open(file_path, "wb") as file:
+        file.write(response.content)
+
+    # Speicherort anzeigen
+    print(f"CSV gespeichert: {file_path}")
+
+    return file_path
+
+
+def read_csv_file(file_path):
+    # CSV-Datei mit pandas einlesen
+    data_frame = pd.read_csv(
+        file_path,
+        header=None,
+        names=["timestamp", "latitude", "longitude", "temperature", "humidity"],
+    )
+
+    # Zeitstempel in Datumsformat umwandeln
+    data_frame["timestamp"] = pd.to_datetime(data_frame["timestamp"])
+
+    return data_frame
+
+
+def calculate_violations(data_frame):
+    # Kopie der Tabelle erstellen
+    data_frame = data_frame.copy()
+
+    # Temperaturverletzungen berechnen
+    data_frame["temp_violation"] = (
+        (data_frame["temperature"] < TEMP_MIN)
+        | (data_frame["temperature"] > TEMP_MAX)
+    )
+
+    # Feuchtigkeitsverletzungen berechnen
+    data_frame["humidity_violation"] = data_frame["humidity"] > HUM_MAX
+
+    # Alle Grenzwertverletzungen zusammenfassen
+    data_frame["any_violation"] = (
+        data_frame["temp_violation"]
+        | data_frame["humidity_violation"]
+    )
+
+    return data_frame
+
+
+def calculate_statistics(data_frame):
+    # Kennzahlen in Dictionary speichern
+    statistics = {
+        "total_points": len(data_frame),
+        "start_time": data_frame["timestamp"].min(),
+        "end_time": data_frame["timestamp"].max(),
+        "avg_temperature": data_frame["temperature"].mean(),
+        "min_temperature": data_frame["temperature"].min(),
+        "max_temperature": data_frame["temperature"].max(),
+        "avg_humidity": data_frame["humidity"].mean(),
+        "max_humidity": data_frame["humidity"].max(),
+        "temp_violations": int(data_frame["temp_violation"].sum()),
+        "humidity_violations": int(data_frame["humidity_violation"].sum()),
+        "all_violations": int(data_frame["any_violation"].sum()),
+    }
+
+    return statistics
+
+
+def create_temperature_chart(data_frame, container, route):
+    # Dateiname für Temperaturdiagramm festlegen
+    chart_path = CHARTS_DIR / f"{container}_{route}_temperature.png"
+
+    # Diagrammgrösse festlegen
+    plt.figure(figsize=(10, 4))
+
+    # Temperaturverlauf zeichnen
+    plt.plot(data_frame["timestamp"], data_frame["temperature"], color="tab:red", label="Temperatur")
+
+    # Unteren Temperaturgrenzwert einzeichnen
+    plt.axhline(TEMP_MIN, linestyle="--", color="gray", label=f"Minimum {TEMP_MIN} °C")
+
+    # Oberen Temperaturgrenzwert einzeichnen
+    plt.axhline(TEMP_MAX, linestyle="--", color="black", label=f"Maximum {TEMP_MAX} °C")
+
+    # Diagrammbeschriftung setzen
+    plt.title("Temperaturverlauf")
+    plt.xlabel("Zeit")
+    plt.ylabel("Temperatur in °C")
+
+    # Zeitachse besser lesbar machen
+    plt.xticks(rotation=35)
+
+    # Legende anzeigen
+    plt.legend()
+
+    # Layout automatisch anpassen
+    plt.tight_layout()
+
+    # Diagramm als Bild speichern
+    plt.savefig(chart_path, dpi=150)
+
+    # Diagramm schliessen
+    plt.close()
+
+    return chart_path
+
+
+def create_humidity_chart(data_frame, container, route):
+    # Dateiname für Feuchtigkeitsdiagramm festlegen
+    chart_path = CHARTS_DIR / f"{container}_{route}_humidity.png"
+
+    # Diagrammgrösse festlegen
+    plt.figure(figsize=(10, 4))
+
+    # Feuchtigkeitsverlauf zeichnen
+    plt.plot(data_frame["timestamp"], data_frame["humidity"], color="tab:blue", label="Feuchtigkeit")
+
+    # Feuchtigkeitsgrenzwert einzeichnen
+    plt.axhline(HUM_MAX, linestyle="--", color="black", label=f"Maximum {HUM_MAX} %")
+
+    # Diagrammbeschriftung setzen
+    plt.title("Feuchtigkeitsverlauf")
+    plt.xlabel("Zeit")
+    plt.ylabel("Feuchtigkeit in %")
+
+    # Zeitachse besser lesbar machen
+    plt.xticks(rotation=35)
+
+    # Legende anzeigen
+    plt.legend()
+
+    # Layout automatisch anpassen
+    plt.tight_layout()
+
+    # Diagramm als Bild speichern
+    plt.savefig(chart_path, dpi=150)
+
+    # Diagramm schliessen
+    plt.close()
+
+    return chart_path
+
+
+def create_violation_chart(data_frame, container, route):
+    # Dateiname für Grenzwertdiagramm festlegen
+    chart_path = CHARTS_DIR / f"{container}_{route}_violations.png"
+
+    # Beschriftungen für Balkendiagramm festlegen
+    labels = ["Temperatur", "Feuchtigkeit", "Ohne Verletzung"]
+
+    # Werte für Balkendiagramm berechnen
+    values = [
+        int(data_frame["temp_violation"].sum()),
+        int(data_frame["humidity_violation"].sum()),
+        int((~data_frame["any_violation"]).sum()),
+    ]
+
+    # Farben für Balken festlegen
+    colors_list = ["tab:red", "tab:blue", "tab:green"]
+
+    # Diagrammgrösse festlegen
+    plt.figure(figsize=(8, 4))
+
+    # Balkendiagramm erstellen
+    plt.bar(labels, values, color=colors_list)
+
+    # Diagrammbeschriftung setzen
+    plt.title("Grenzwertverletzungen")
+    plt.ylabel("Anzahl Messpunkte")
+
+    # Layout automatisch anpassen
+    plt.tight_layout()
+
+    # Diagramm als Bild speichern
+    plt.savefig(chart_path, dpi=150)
+
+    # Diagramm schliessen
+    plt.close()
+
+    return chart_path
+
+
+def create_static_route_chart(data_frame, container, route):
+    # Dateiname für statische Route festlegen
+    chart_path = CHARTS_DIR / f"{container}_{route}_route.png"
+
+    # Messpunkte ohne Verletzung filtern
+    ok_points = data_frame[~data_frame["any_violation"]]
+
+    # Messpunkte mit Verletzung filtern
+    bad_points = data_frame[data_frame["any_violation"]]
+
+    # Diagrammgrösse festlegen
+    plt.figure(figsize=(6, 6))
+
+    # Route als Linie zeichnen
+    plt.plot(data_frame["longitude"], data_frame["latitude"], color="gray", linewidth=1, label="Route")
+
+    # Normale Messpunkte grün zeichnen
+    plt.scatter(ok_points["longitude"], ok_points["latitude"], s=18, color="green", label="OK")
+
+    # Verletzte Messpunkte rot zeichnen
+    plt.scatter(bad_points["longitude"], bad_points["latitude"], s=25, color="red", label="Verletzung")
+
+    # Diagrammbeschriftung setzen
+    plt.title("Route mit markierten Verletzungen")
+    plt.xlabel("Longitude")
+    plt.ylabel("Latitude")
+
+    # Legende anzeigen
+    plt.legend()
+
+    # Layout automatisch anpassen
+    plt.tight_layout()
+
+    # Diagramm als Bild speichern
+    plt.savefig(chart_path, dpi=150)
+
+    # Diagramm schliessen
+    plt.close()
+
+    return chart_path
+
+
+def create_charts(data_frame, container, route):
+    # Alle Diagramme erstellen
+    charts = {
+        "temperature": create_temperature_chart(data_frame, container, route),
+        "humidity": create_humidity_chart(data_frame, container, route),
+        "violations": create_violation_chart(data_frame, container, route),
+        "route": create_static_route_chart(data_frame, container, route),
+    }
+
+    return charts
+
+
+def create_map(data_frame, container, route):
+    # Mittelpunkt der Karte berechnen
+    center_lat = data_frame["latitude"].mean()
+    center_lon = data_frame["longitude"].mean()
+
+    # Folium-Karte erstellen
+    map_object = folium.Map(
+        location=[center_lat, center_lon],
+        zoom_start=12,
+        tiles="OpenStreetMap",
+    )
+
+    # Koordinaten für die Route vorbereiten
+    coordinates = data_frame[["latitude", "longitude"]].values.tolist()
+
+    # Route als Linie einzeichnen
+    folium.PolyLine(
+        coordinates,
+        color="blue",
+        weight=4,
+        opacity=0.8,
+        tooltip="Route",
+    ).add_to(map_object)
+
+    # Alle Messpunkte durchgehen
+    for _, row in data_frame.iterrows():
+        # Farbe je nach Grenzwertverletzung festlegen
+        marker_color = "red" if row["any_violation"] else "green"
+
+        # Text für Popup erstellen
+        popup_text = (
+            f"Zeit: {row['timestamp']}<br>"
+            f"Temperatur: {row['temperature']} °C<br>"
+            f"Feuchtigkeit: {row['humidity']} %<br>"
+            f"Temperatur-Verletzung: {row['temp_violation']}<br>"
+            f"Feuchtigkeits-Verletzung: {row['humidity_violation']}"
+        )
+
+        # Messpunkt auf Karte einzeichnen
+        folium.CircleMarker(
+            location=[row["latitude"], row["longitude"]],
+            radius=5,
+            color=marker_color,
+            fill=True,
+            fill_color=marker_color,
+            fill_opacity=0.8,
+            popup=folium.Popup(popup_text, max_width=300),
+        ).add_to(map_object)
+
+    # Dateiname für HTML-Karte festlegen
+    map_path = MAPS_DIR / f"{container}_{route}_map.html"
+
+    # Karte als HTML-Datei speichern
+    map_object.save(map_path)
+
+    return map_path
+
+
+def create_conclusion(statistics):
+    # Fazit ohne Grenzwertverletzungen erstellen
+    if statistics["all_violations"] == 0:
+        return "Der Transport war unauffällig. Es wurden keine Grenzwertverletzungen gefunden."
+
+    # Textteile für Fazit sammeln
+    conclusion_parts = []
+
+    # Temperaturverletzungen ins Fazit aufnehmen
+    if statistics["temp_violations"] > 0:
+        conclusion_parts.append(f"Es gab {statistics['temp_violations']} Temperaturverletzungen.")
+
+    # Feuchtigkeitsverletzungen ins Fazit aufnehmen
+    if statistics["humidity_violations"] > 0:
+        conclusion_parts.append(f"Es gab {statistics['humidity_violations']} Feuchtigkeitsverletzungen.")
+
+    # Kurze Bewertung ergänzen
+    conclusion_parts.append("Der Transport sollte genauer geprüft werden.")
+
+    # Textteile zu einem Satz verbinden
+    return " ".join(conclusion_parts)
+
+
+def create_pdf_report(container, route, statistics, charts):
+    # Dateiname für PDF-Bericht festlegen
+    pdf_path = REPORTS_DIR / f"{container}_{route}_report.pdf"
+
+    # PDF-Dokument vorbereiten
+    document = SimpleDocTemplate(
+        str(pdf_path),
+        pagesize=A4,
+        rightMargin=1.5 * cm,
+        leftMargin=1.5 * cm,
+        topMargin=1.5 * cm,
+        bottomMargin=1.5 * cm,
+    )
+
+    # Standard-Styles von reportlab laden
+    styles = getSampleStyleSheet()
+
+    # Zusätzlichen Textstil für kleine Hinweise erstellen
+    styles.add(
+        ParagraphStyle(
+            name="SmallText",
+            parent=styles["Normal"],
+            fontSize=9,
+            leading=12,
+        )
+    )
+
+    # Inhalte des PDF-Berichts sammeln
+    story = []
+
+    # Start- und Endzeit aus Kennzahlen holen
+    start_time = statistics["start_time"]
+    end_time = statistics["end_time"]
+
+    # Titel in PDF einfügen
+    story.append(Paragraph("Retrospektiver Transportbericht", styles["Title"]))
+    story.append(Spacer(1, 0.4 * cm))
+
+    # Metadaten für PDF vorbereiten
+    metadata = [
+        ["Container", container],
+        ["Route", route],
+        ["Start", start_time.strftime("%d.%m.%Y %H:%M")],
+        ["Ende", end_time.strftime("%d.%m.%Y %H:%M")],
+        ["Temperatur-Grenzwerte", f"{TEMP_MIN} °C bis {TEMP_MAX} °C"],
+        ["Feuchtigkeits-Grenzwert", f"maximal {HUM_MAX} %"],
+    ]
+
+    # Metadaten-Tabelle erstellen
+    metadata_table = Table(metadata, colWidths=[5 * cm, 10 * cm])
+
+    # Darstellung der Metadaten-Tabelle festlegen
+    metadata_table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (0, -1), colors.lightgrey),
+                ("GRID", (0, 0), (-1, -1), 0.4, colors.grey),
+                ("PADDING", (0, 0), (-1, -1), 5),
+            ]
+        )
+    )
+
+    # Metadaten-Tabelle in PDF einfügen
+    story.append(metadata_table)
+    story.append(Spacer(1, 0.6 * cm))
+
+    # Überschrift für Kennzahlen einfügen
+    story.append(Paragraph("Kennzahlen", styles["Heading2"]))
+
+    # Kennzahlentabelle vorbereiten
+    statistics_table_data = [
+        ["Kennzahl", "Wert"],
+        ["Anzahl Messpunkte", str(statistics["total_points"])],
+        ["Durchschnittstemperatur", f"{statistics['avg_temperature']:.2f} °C"],
+        ["Minimale Temperatur", f"{statistics['min_temperature']:.2f} °C"],
+        ["Maximale Temperatur", f"{statistics['max_temperature']:.2f} °C"],
+        ["Durchschnittliche Feuchtigkeit", f"{statistics['avg_humidity']:.2f} %"],
+        ["Maximale Feuchtigkeit", f"{statistics['max_humidity']:.2f} %"],
+        ["Temperaturverletzungen", str(statistics["temp_violations"])],
+        ["Feuchtigkeitsverletzungen", str(statistics["humidity_violations"])],
+        ["Alle Grenzwertverletzungen", str(statistics["all_violations"])],
+    ]
+
+    # Kennzahlentabelle erstellen
+    statistics_table = Table(statistics_table_data, colWidths=[8 * cm, 6 * cm])
+
+    # Darstellung der Kennzahlentabelle festlegen
+    statistics_table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#d9eaf7")),
+                ("GRID", (0, 0), (-1, -1), 0.4, colors.grey),
+                ("PADDING", (0, 0), (-1, -1), 5),
+            ]
+        )
+    )
+
+    # Kennzahlentabelle in PDF einfügen
+    story.append(statistics_table)
+    story.append(Spacer(1, 0.7 * cm))
+
+    # Überschrift für Fazit einfügen
+    story.append(Paragraph("Automatisches Fazit", styles["Heading2"]))
+
+    # Automatisches Fazit einfügen
+    story.append(Paragraph(create_conclusion(statistics), styles["Normal"]))
+
+    # Neue PDF-Seite beginnen
+    story.append(PageBreak())
+
+    # Temperaturdiagramm einfügen
+    story.append(Paragraph("Temperaturverlauf", styles["Heading2"]))
+    story.append(Image(str(charts["temperature"]), width=16 * cm, height=6 * cm))
+    story.append(Spacer(1, 0.5 * cm))
+
+    # Feuchtigkeitsdiagramm einfügen
+    story.append(Paragraph("Feuchtigkeitsverlauf", styles["Heading2"]))
+    story.append(Image(str(charts["humidity"]), width=16 * cm, height=6 * cm))
+    story.append(Spacer(1, 0.5 * cm))
+
+    # Grenzwertdiagramm einfügen
+    story.append(Paragraph("Grenzwertverletzungen", styles["Heading2"]))
+    story.append(Image(str(charts["violations"]), width=14 * cm, height=6 * cm))
+
+    # Neue PDF-Seite beginnen
+    story.append(PageBreak())
+
+    # Routendarstellung einfügen
+    story.append(Paragraph("Statische Routendarstellung", styles["Heading2"]))
+    story.append(Paragraph("Grüne Punkte sind normale Messpunkte. Rote Punkte zeigen Grenzwertverletzungen.", styles["SmallText"]))
+    story.append(Spacer(1, 0.2 * cm))
+    story.append(Image(str(charts["route"]), width=14 * cm, height=14 * cm))
+
+    # PDF-Bericht erstellen
+    document.build(story)
+
+    return pdf_path
+
+
+def main():
+    # Containerliste abrufen
+    containers = fetch_containers()
+
+    # Programm beenden, wenn keine Container vorhanden sind
+    if not containers:
+        return
+
+    # Container auswählen
+    selected_container = choose_item("Verfügbare Container", containers)
+
+    # Programm beenden, wenn Auswahl ungültig ist
+    if selected_container is None:
+        return
+
+    # Routenliste abrufen
+    routes = fetch_routes(selected_container)
+
+    # Programm beenden, wenn keine Routen vorhanden sind
+    if not routes:
+        return
+
+    # Route auswählen
+    selected_route = choose_item("Verfügbare Routen", routes)
+
+    # Programm beenden, wenn Auswahl ungültig ist
+    if selected_route is None:
+        return
+
+    # CSV-Datei herunterladen
+    csv_path = download_csv(selected_container, selected_route)
+
+    # Programm beenden, wenn Download fehlgeschlagen ist
+    if csv_path is None:
+        return
+
+    # CSV-Datei einlesen
+    data_frame = read_csv_file(csv_path)
+
+    # Grenzwertverletzungen berechnen
+    data_frame = calculate_violations(data_frame)
+
+    # Kennzahlen berechnen
+    statistics = calculate_statistics(data_frame)
+
+    # Diagramme erstellen
+    charts = create_charts(data_frame, selected_container, selected_route)
+
+    # Interaktive Karte erstellen
+    map_path = create_map(data_frame, selected_container, selected_route)
+
+    # PDF-Bericht erstellen
+    pdf_path = create_pdf_report(selected_container, selected_route, statistics, charts)
+
+    # Abschlussmeldung anzeigen
+    print()
+    print("Auswertung abgeschlossen.")
+    print(f"Karte gespeichert: {map_path}")
+    print(f"Bericht gespeichert: {pdf_path}")
+
+
+# Programm starten
+if __name__ == "__main__":
+    main()
