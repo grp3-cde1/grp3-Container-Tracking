@@ -23,7 +23,7 @@ Diese Inhalte werden im Tutorial nicht im Detail neu eingeführt, sondern voraus
 Falls du eines der oben genannten Themen lernen oder repetieren willst empfehlen wir folgende Webseite:
 https://pyflo.net
 
-## Schritt 1: Einfache Single-File-Version
+## Schritt 1: Einfache Single-File-Version Retrospektive App
 
 Im ersten Schritt wird eine Retrospektive-Applikation in einer einzigen Python-Datei umgesetzt. Diese erste Version ist bewusst einfach gehalten, damit der Fokus zunächst auf der praktischen Umsetzung zentraler Funktionen liegt. Dabei wird gezeigt, wie verschiedene Bibliotheken eingebunden und für konkrete Aufgaben genutzt werden können.
 
@@ -38,7 +38,7 @@ Gleichzeitig dient dieser Schritt dazu, die Stärken, aber auch die Grenzen eine
   - weitere projektbezogene Bibliotheken
 - Vor- und Nachteile einer einfachen Struktur
 
-## Schritt 2: Strukturierung und objektorientierte Programmierung
+## Schritt 2: Strukturierung und objektorientierte Programmierung Live-Monitor App
 
 Im zweiten Schritt wird die erste Version überarbeitet und in eine klarere, besser strukturierte Form überführt. Dabei steht die Frage im Mittelpunkt, wie ein Programm so aufgebaut werden kann, dass es übersichtlicher, wartbarer und leichter erweiterbar wird.
 
