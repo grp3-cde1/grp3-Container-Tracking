@@ -68,3 +68,44 @@ Das macht den Code:
 - einfacher zu erweitern
 
 ---
+
+## Grundstruktur der App
+
+Die App besteht aus mehreren Arbeitsschritten:
+
+1. Container abrufen
+2. Container auswählen
+3. Routen abrufen
+4. Route auswählen
+5. CSV herunterladen
+6. CSV einlesen
+7. Grenzwertverletzungen berechnen
+8. Diagramme erstellen
+9. Karte erstellen
+10. PDF-Bericht erstellen
+
+Diese Schritte werden später in der Funktion `main()` zusammengeführt.
+
+---
+
+## Projektordner
+
+Die App speichert verschiedene Ausgaben:
+
+CSV-Dateien in `data/`
+Karten in `maps/`
+Diagramme in `charts/`
+PDF-Berichte in `reports/`
+Dafür verwenden wir pathlib.
+
+```python
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+DATA_DIR = BASE_DIR / "data"
+MAPS_DIR = BASE_DIR / "maps"
+CHARTS_DIR = BASE_DIR / "charts"
+REPORTS_DIR = BASE_DIR / "reports"
+```
+Mit `mkdir(exist_ok=True)` können Ordner automatisch erstellt werden.
