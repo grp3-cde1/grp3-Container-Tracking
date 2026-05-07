@@ -1,49 +1,91 @@
 # Tutorial: Funktionsbasierte Retrospektive-App
 
-## Ziel
+## Ziel des Tutorials
 
 In diesem Tutorial bauen wir eine Retrospektive-App für Container-Tracking.
 
-Die App wertet abgeschlossene Transporte aus. Wir arbeiten mit echten Transportdaten und nutzen mehrere wichtige Python-Bibliotheken.
+Die App analysiert einen abgeschlossenen Transport. Dabei lernen wir nicht nur neue Bibliotheken kennen, sondern auch, wie man ein Python-Programm mit Funktionen sauber strukturiert.
 
-Die App kann:
+Am Ende kann die App:
 
 - Container über eine REST-API abrufen
 - Routen zu einem Container abrufen
-- CSV-Dateien herunterladen
-- Daten mit pandas einlesen
+- eine CSV-Datei herunterladen
+- Messdaten mit pandas einlesen
 - Grenzwertverletzungen berechnen
-- Diagramme mit matplotlib erzeugen
-- Karten mit folium erstellen
-- PDF-Berichte mit reportlab erzeugen
-
-Die App bleibt in diesem Schritt bewusst funktionsbasiert.
+- Diagramme erstellen
+- eine Karte erzeugen
+- einen PDF-Bericht erstellen
 
 ---
 
-## Voraussetzungen
+## 1. Was bauen wir?
+
+Im Logistik-Kontext entstehen bei einem Containertransport viele Messdaten.
+
+Typische Daten sind:
+
+- Zeitstempel
+- geografische Koordinaten
+- Temperatur
+- Feuchtigkeit
+
+Diese Daten helfen dabei, einen Transport später zu prüfen.
+
+Zum Beispiel können wir fragen:
+
+- War die Temperatur immer im erlaubten Bereich?
+- War die Feuchtigkeit zu hoch?
+- Wo auf der Route gab es Probleme?
+- Wie kann man die Ergebnisse verständlich darstellen?
+
+Unsere Retrospektive-App beantwortet genau solche Fragen.
+
+---
+
+## 2. Voraussetzungen
 
 Du solltest bereits diese Grundlagen kennen:
 
 - Variablen
+- Datentypen
 - Listen
 - Dictionaries
 - Bedingungen
 - Schleifen
-- Funktionen
 - einfache Dateioperationen
 
 Dieses Tutorial erklärt nicht Python von Grund auf. Es zeigt, wie man vorhandenes Wissen praktisch in einem Projekt einsetzt.
 
 ---
 
-## Warum Funktionen?
+## 3. Warum Funktionen?
 
-Am Anfang könnte man den ganzen Code einfach untereinander schreiben.
+Am Anfang schreibt man Python-Code oft einfach von oben nach unten.
+
+Beispiel:
+
+```python
+print("Container abrufen")
+print("CSV einlesen")
+print("Bericht erstellen")
+```
 
 Das funktioniert bei kleinen Programmen. Bei grösseren Programmen wird es aber schnell unübersichtlich.
 
-Darum teilen wir die App in Funktionen auf.
+Bei unserer App gibt es aber viele einzelne Aufgaben:
+
+- Daten vom Webservice holen
+- Benutzerauswahl anzeigen
+- CSV-Datei speichern
+- Tabelle mit pandas einlesen
+- Grenzwerte prüfen
+- Diagramme erzeugen
+- PDF schreiben
+
+Wenn alles direkt untereinander steht, wird der Code schnell lang und schwer lesbar.
+
+Funktionen helfen uns, den Code in kleine Bausteine aufzuteilen.
 
 Beispiele:
 
@@ -58,14 +100,35 @@ def create_pdf_report():
     pass
 ```
 
-Jede Funktion hat eine klare Aufgabe.
-
 Das macht den Code:
 
 - übersichtlicher
 - einfacher zu testen
 - einfacher zu erklären
 - einfacher zu erweitern
+
+---
+
+## 4. Was ist eine Funktion?
+Eine Funktion ist ein benannter Codeblock.
+
+Man kann eine Funktion einmal definieren und später aufrufen.
+
+Ein sehr einfaches Beispiel:
+
+```python
+def say_hello():
+    print("Hallo")
+```
+
+Die Funktion wird mit def definiert.
+
+Der Code in der Funktion ist eingerückt.
+
+Aufgerufen wird sie so:
+
+`say_hello()`
+Dann wird der Code innerhalb der Funktion ausgeführt.
 
 ---
 
