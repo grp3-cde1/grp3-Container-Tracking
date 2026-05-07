@@ -52,7 +52,7 @@ Dieses Tutorial baut darauf auf und zeigt, wie man mit Funktionen grössere Prog
 
 ---
 
-## 3. Warum Funktionen? Ein Vorher/Nachher-Vergleich
+## 3. Warum Funktionen?
 
 Am Anfang schreibt man Python-Code oft einfach von oben nach unten. Das nennt man **sequenziellen Code**.
 
