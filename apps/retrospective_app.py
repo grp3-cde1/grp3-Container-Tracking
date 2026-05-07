@@ -37,6 +37,13 @@ HUM_MAX = 72
 
 
 def fetch_containers():
+    """
+    Ruft alle verfügbaren Container vom Server ab.
+
+    Rückgabe:
+        Liste der Container-IDs, oder leere Liste bei Fehler
+    """
+
     # Container vom Webservice abrufen
     response = requests.get(f"{BASE_URL}/containers", timeout=10)
 
@@ -55,6 +62,16 @@ def fetch_containers():
 
 
 def fetch_routes(container):
+    """
+    Ruft alle Routen für einen bestimmten Container ab.
+
+    Parameter:
+        container: Container-ID als String
+
+    Rückgabe:
+        Liste der Routen-IDs, oder leere Liste bei Fehler
+    """
+
     # Routen für den gewählten Container abrufen
     response = requests.get(f"{BASE_URL}/containers/{container}/routes", timeout=10)
 
@@ -73,6 +90,17 @@ def fetch_routes(container):
 
 
 def choose_item(title, items):
+    """
+    Zeigt eine nummerierte Liste an und gibt das gewählte Element zurück.
+
+    Parameter:
+        title:  Überschrift der Auswahl
+        items:  Liste der Auswahlmöglichkeiten
+
+    Rückgabe:
+        Das gewählte Element, oder None bei ungültiger Eingabe
+    """
+
     # Titel der Auswahl anzeigen
     print()
     print(title)
@@ -96,6 +124,17 @@ def choose_item(title, items):
 
 
 def download_csv(container, route):
+    """
+    Lädt die CSV-Datei zur gewählten Route herunter.
+
+    Parameter:
+        container: Container-ID
+        route:     Routen-ID
+
+    Rückgabe:
+        Pfad zur gespeicherten Datei, oder None bei Fehler
+    """
+
     # Lokalen Dateinamen festlegen
     file_path = DATA_DIR / f"{container}_{route}.csv"
 
@@ -130,6 +169,17 @@ def download_csv(container, route):
 
 
 def read_csv_file(file_path):
+    """
+    Liest eine CSV-Datei ein und gibt einen DataFrame zurück.
+
+    Parameter:
+        file_path: Pfad zur CSV-Datei
+
+    Rückgabe:
+        pandas DataFrame mit Spalten: timestamp, latitude, longitude,
+        temperature, humidity
+    """
+
     # CSV-Datei mit pandas einlesen
     data_frame = pd.read_csv(
         file_path,
@@ -144,6 +194,17 @@ def read_csv_file(file_path):
 
 
 def calculate_violations(data_frame):
+    """
+    Ergänzt den DataFrame um Boolean-Spalten für Grenzwertverletzungen.
+
+    Parameter:
+        data_frame: pandas DataFrame mit temperature und humidity
+
+    Rückgabe:
+        Kopie des DataFrames mit zusätzlichen Spalten:
+        temp_violation, humidity_violation, any_violation
+    """
+
     # Kopie der Tabelle erstellen
     data_frame = data_frame.copy()
 
@@ -166,6 +227,16 @@ def calculate_violations(data_frame):
 
 
 def calculate_statistics(data_frame):
+    """
+    Berechnet zusammengefasste Kennzahlen aus dem DataFrame.
+
+    Parameter:
+        data_frame: pandas DataFrame mit Violations-Spalten
+
+    Rückgabe:
+        Dictionary mit Kennzahlen
+    """
+
     # Kennzahlen in Dictionary speichern
     statistics = {
         "total_points": len(data_frame),
@@ -185,6 +256,18 @@ def calculate_statistics(data_frame):
 
 
 def create_temperature_chart(data_frame, container, route):
+    """
+    Erstellt ein Diagramm für den Temperaturverlauf.
+
+    Parameter:
+        data_frame: pandas DataFrame mit Zeitstempel und Temperatur
+        container:  Container-ID (für den Dateinamen)
+        route:      Routen-ID (für den Dateinamen)
+
+    Rückgabe:
+        Pfad zum gespeicherten Temperaturdiagramm
+    """
+
     # Dateiname für Temperaturdiagramm festlegen
     chart_path = CHARTS_DIR / f"{container}_{route}_temperature.png"
 
@@ -224,6 +307,18 @@ def create_temperature_chart(data_frame, container, route):
 
 
 def create_humidity_chart(data_frame, container, route):
+    """
+    Erstellt ein Diagramm für den Feuchtigkeitsverlauf.
+
+    Parameter:
+        data_frame: pandas DataFrame mit Zeitstempel und Feuchtigkeit
+        container:  Container-ID (für den Dateinamen)
+        route:      Routen-ID (für den Dateinamen)
+
+    Rückgabe:
+        Pfad zum gespeicherten Feuchtigkeitsdiagramm
+    """
+
     # Dateiname für Feuchtigkeitsdiagramm festlegen
     chart_path = CHARTS_DIR / f"{container}_{route}_humidity.png"
 
@@ -260,6 +355,18 @@ def create_humidity_chart(data_frame, container, route):
 
 
 def create_violation_chart(data_frame, container, route):
+    """
+    Erstellt ein Balkendiagramm zu Grenzwertverletzungen.
+
+    Parameter:
+        data_frame: pandas DataFrame mit Verletzungsspalten
+        container:  Container-ID (für den Dateinamen)
+        route:      Routen-ID (für den Dateinamen)
+
+    Rückgabe:
+        Pfad zum gespeicherten Verletzungsdiagramm
+    """
+
     # Dateiname für Grenzwertdiagramm festlegen
     chart_path = CHARTS_DIR / f"{container}_{route}_violations.png"
 
@@ -299,6 +406,18 @@ def create_violation_chart(data_frame, container, route):
 
 
 def create_static_route_chart(data_frame, container, route):
+    """
+    Erstellt eine statische Routendarstellung für den PDF-Bericht.
+
+    Parameter:
+        data_frame: pandas DataFrame mit Koordinaten und Verletzungsspalten
+        container:  Container-ID (für den Dateinamen)
+        route:      Routen-ID (für den Dateinamen)
+
+    Rückgabe:
+        Pfad zur gespeicherten Routengrafik
+    """
+
     # Dateiname für statische Route festlegen
     chart_path = CHARTS_DIR / f"{container}_{route}_route.png"
 
@@ -353,6 +472,18 @@ def create_charts(data_frame, container, route):
 
 
 def create_map(data_frame, container, route):
+    """
+    Erstellt eine interaktive Karte mit der Transportroute.
+
+    Parameter:
+        data_frame: pandas DataFrame mit latitude und longitude
+        container:  Container-ID (für den Dateinamen)
+        route:      Routen-ID (für den Dateinamen)
+
+    Rückgabe:
+        Pfad zur gespeicherten HTML-Karte
+    """
+
     # Mittelpunkt der Karte berechnen
     center_lat = data_frame["latitude"].mean()
     center_lon = data_frame["longitude"].mean()
@@ -411,6 +542,16 @@ def create_map(data_frame, container, route):
 
 
 def create_conclusion(statistics):
+    """
+    Erstellt ein kurzes automatisches Fazit.
+
+    Parameter:
+        statistics: Dictionary mit Kennzahlen und Grenzwertverletzungen
+
+    Rückgabe:
+        Fazit als Text
+    """
+
     # Fazit ohne Grenzwertverletzungen erstellen
     if statistics["all_violations"] == 0:
         return "Der Transport war unauffällig. Es wurden keine Grenzwertverletzungen gefunden."
@@ -434,6 +575,19 @@ def create_conclusion(statistics):
 
 
 def create_pdf_report(container, route, statistics, charts):
+    """
+    Erstellt einen PDF-Bericht zur ausgewählten Route.
+
+    Parameter:
+        container:  Container-ID
+        route:      Routen-ID
+        statistics: Dictionary mit Kennzahlen
+        charts:     Dictionary mit Pfaden zu den Diagrammen
+
+    Rückgabe:
+        Pfad zum gespeicherten PDF-Bericht
+    """
+    
     # Dateiname für PDF-Bericht festlegen
     pdf_path = REPORTS_DIR / f"{container}_{route}_report.pdf"
 
