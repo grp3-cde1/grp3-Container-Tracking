@@ -12,6 +12,11 @@ topic = "migros/grp3/message"
 temp_min = 15
 temp_max = 26
 
+# Farbe für Grenzüberschreitungen im Terminal
+green = "\033[92m"
+red = "\033[91m"
+reset = "\033[0m"
+
 # Leeren DataFrame für Live-Daten erstellen
 live_data = pd.DataFrame()
 
@@ -68,9 +73,9 @@ def on_message(client, userdata, message):
 
     # Temperatur-Grenzwert prüfen
     if temperature < temp_min or temperature > temp_max:
-        print(f"WARNUNG: Temperatur ausserhalb des Bereichs: {temperature} °C")
+        print(red + f"WARNUNG: Temperatur ausserhalb des Bereichs: {temperature} °C" + reset)
     else:
-        print(f"Temperatur OK: {temperature} °C")
+        print(green + f"Temperatur OK: {temperature} °C" + reset)
 
     # Anzahl empfangener Messpunkte anzeigen
     print(f"Anzahl empfangene Messpunkte: {len(live_data)}")
