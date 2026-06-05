@@ -87,11 +87,30 @@ Es können auch mehrere Elemente gleichzeitig importiert werden:
 from math import sqrt, pi
 ```
 
+## Installation aller benötigten Bibliotheken
+Die Datei requirements.txt enthält alle externen Python-Bibliotheken, die für die Ausführung des Projekts benötigt werden. Dadurch müssen die benötigten Pakete nicht einzeln manuell installiert werden.  
+
+In diesem Projekt werden unter anderem Bibliotheken für Datenverarbeitung, Visualisierung, Karten, PDF-Erstellung, API-Anfragen und Live-Kommunikation verwendet.  
+
+Die Abhängigkeiten können mit folgendem Befehl installiert werden:
+```
+pip install -r requirements.txt
+```
+
+Alternativ kann der Befehl auch so ausgeführt werden:
+```
+python -m pip install -r requirements.txt
+``` 
 ## Übersicht der behandelten Bibliotheken
 
 Im Folgenden findest du eine Übersicht der Bibliotheken sowie das dazugehörige Tutorial
 
 - [GeoPandas](geopandas.md)
+- [Pandas](pandas.md)
 - [OS](os.md)
 - [ReportLab](reportlab.md)
 - [Folium](folium.md)
+- [Requests](requests.md)
+- [MatPlotLib](matplotlib.md)
+- [Paho-mqtt](paho-mqtt.md)
+
