@@ -1,2 +1,0 @@
-# Tutorial: Live Monitor App
-
