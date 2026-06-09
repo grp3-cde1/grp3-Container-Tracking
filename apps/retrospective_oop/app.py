@@ -114,7 +114,4 @@ class RetrospectiveApp:
         print(f"Karte gespeichert: {map_path}")
         print("Auswertung abgeschlossen.")
 
-if __name__ == "__main__":
-    app = RetrospectiveApp()
-    app.run()
 
