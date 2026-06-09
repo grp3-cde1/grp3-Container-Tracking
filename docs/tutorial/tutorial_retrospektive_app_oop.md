@@ -722,11 +722,11 @@ Besonders ist das Tutorial zur Struktur hervorzuheben, darin wird gezeigt wie ma
 
 ## 11 Klassen Tutorials
 Folgend sind alle Klassen erklärt.
-- [struktur.md](struktur.md)
-- [config.md](config.md)
-- [api_client](api_client.md)
-- [data_processor](data_processor.md)
-- [output_creator](output_creator.md)
-- [RetrospectiveApp](app.md)
+- [struktur.md](tutorial_oop/struktur.md)
+- [config.md](tutorial_oop/config.md)
+- [api_client](tutorial_oop/api_client.md)
+- [data_processor](tutorial_oop/data_processor.md)
+- [output_creator](tutorial_oop/output_creator.md)
+- [RetrospectiveApp](tutorial_oop/app.md)
 
 
