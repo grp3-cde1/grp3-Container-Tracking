@@ -210,5 +210,5 @@ __marimo__/
 .DS_Store
 
 # PNGs and PDFs
-.pdf 
-.png 
+*.pdf 
+*.png 
