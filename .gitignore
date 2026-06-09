@@ -208,3 +208,7 @@ __marimo__/
 
 # For Mac Users ;)
 .DS_Store
+
+# PNGs and PDFs
+.pdf 
+.png 
