@@ -722,6 +722,11 @@ Besonders ist das Tutorial zur Struktur hervorzuheben, darin wird gezeigt wie ma
 
 ## 11 Klassen Tutorials
 Folgend sind alle Klassen erklärt.
+
+Die Tutorials sind einzeln und deckungsgleich Aufgebaut, damit die Redundanz dient der ständigen Wiederholung und Visualisierung des OOPs. 
+
+Es ist beabsichtigt, dass nicht ganze Code-Snippets im Tutorial stehen, die "Fertige" Lösung findest du im Projektordner.
+
 - [struktur.md](tutorial_oop/struktur.md)
 - [config.md](tutorial_oop/config.md)
 - [api_client](tutorial_oop/api_client.md)

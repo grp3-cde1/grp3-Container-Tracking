@@ -1,4 +1,4 @@
-# Messdaten einlesen und auswerten
+# Messdaten einlesen und auswerten mit dem `DataProcessor`
 
 ## Ziel dieses Tutorials
 
