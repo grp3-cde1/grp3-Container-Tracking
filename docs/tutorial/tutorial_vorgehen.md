@@ -23,22 +23,39 @@ Diese Inhalte werden im Tutorial nicht im Detail neu eingeführt, sondern voraus
 Falls du eines der oben genannten Themen lernen oder repetieren willst empfehlen wir folgende Webseite:
 https://pyflo.net
 
-## Schritt 1: Einfache Single-File-Version Retrospektive App
+### Schritt 1: Live-Monitor – Funktionen und prozedurale Programmierung
 
-Im ersten Schritt wird eine Retrospektive-Applikation in einer einzigen Python-Datei umgesetzt. Diese erste Version ist bewusst einfach gehalten, damit der Fokus zunächst auf der praktischen Umsetzung zentraler Funktionen liegt. Dabei wird gezeigt, wie verschiedene Bibliotheken eingebunden und für konkrete Aufgaben genutzt werden können.
+Wir starten mit der kleineren App, dem Live-Monitor. Er empfängt Live-Daten eines laufenden Transports über MQTT und zeigt sie im Terminal an.
+
+**Behandelte Themen**
+- Funktionen definieren und aufrufen
+- Parameter und Rückgabewerte
+- Scope (Gültigkeitsbereich von Variablen)
+- Callback-Funktionen (`on_connect`, `on_message`)
+- prozeduraler Programmablauf
+- MQTT-Grundlagen mit `paho-mqtt`
+
+→ `tutorial_livemonitor_app.md`
+
+## Schritt 2: Einfache Single-File-Version Retrospektive App
+
+Anschliessend bauen wir die Retrospektive-App in einer funktionsbasierten Erstfassung. Sie analysiert einen abgeschlossenen Transport.
 
 Gleichzeitig dient dieser Schritt dazu, die Stärken, aber auch die Grenzen einer kompakten Single-File-Lösung sichtbar zu machen. So entsteht ein erstes funktionierendes Programm, das als Ausgangspunkt für spätere Verbesserungen dient.
 
 ### Behandelte Themen
 
 - Datei-Verarbeitung mit CSV
-- Arbeit mit verschiedenen Python-Bibliotheken, zum Beispiel:
+- Arbeit mit verschiedenen Python-Bibliotheken:
   - `pandas`
-  - `geopandas`
-  - weitere projektbezogene Bibliotheken
-- Vor- und Nachteile einer einfachen Struktur
+  - `matplotlib`
+  - `requests`
+  - `folium`
+  - `reportlab`
 
-## Schritt 2: Strukturierung und objektorientierte Programmierung Live-Monitor App
+→ `tutorial_bibliotheken/bibliotheken.md`
+
+## Schritt 3: Strukturierung und objektorientierte Programmierung Live-Monitor App
 
 Im zweiten Schritt wird die erste Version überarbeitet und in eine klarere, besser strukturierte Form überführt. Dabei steht die Frage im Mittelpunkt, wie ein Programm so aufgebaut werden kann, dass es übersichtlicher, wartbarer und leichter erweiterbar wird.
 
@@ -46,10 +63,12 @@ In diesem Zusammenhang werden zentrale Konzepte der objektorientierten Programmi
 
 ### Behandelte Themen
 
-- Funktionen
-- Klassen
-- Objekte
-- Attribute
-- Methoden
-- Modularisierung
-- Strukturierung von Code in mehrere Dateien und Komponenten
+- Klassen und Objekte
+- Attribute und Methoden
+- `self` und `__init__()`
+- Module und Pakete (`__init__.py`, relative Imports)
+- Strukturierung nach Verantwortlichkeiten
+
+## Warum diese Reihenfolge?
+
+Der Live-Monitor ist klein und eignet sich, um **Funktionen** ohne Ablenkung zu verstehen. Die Retrospektive-App ist grösser und zeigt zuerst, wie man mit Funktionen und Bibliotheken arbeitet und danach, warum sich **OOP** für grössere Programme lohnt.
