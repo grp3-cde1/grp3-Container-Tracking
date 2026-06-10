@@ -115,3 +115,5 @@ class RetrospectiveApp:
         print("Auswertung abgeschlossen.")
 
 
+if __name__ == "__main__":
+    RetrospectiveApp().run()
