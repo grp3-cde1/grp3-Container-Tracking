@@ -2,40 +2,41 @@
 
 ## Ziel des Tutorials
 
-In diesem Tutorial bauen wir eine Retrospektive-App für Container-Tracking.
+In diesem Tutorial bauen wir den **Live-Monitor** für Container-Tracking.
 
-Die App analysiert einen abgeschlossenen Transport. Dabei liegt der Fokus auf einem zentralen Konzept: **Funktionen**. Wir lernen nicht nur, wie man Funktionen schreibt – sondern warum sie existieren und wie man sie richtig einsetzt.
+Er überwacht einen laufenden Containertransport in Echtzeit: Er empfängt Messpunkte über MQTT und zeigt sie im Terminal an, mit einer Warnung, wenn die Temperatur ausserhalb des erlaubten Bereichs liegt.
 
-Am Ende kann die App:
+Der Schwerpunkt liegt auf einem zentralen Konzept: **Funktionen** und der **prozeduralen Programmierung**. Wir lernen nicht nur, wie man Funktionen schreibt, sondern auch, warum sie existieren und wie sie in einem ereignisgesteuerten Programm zusammenspielen.
 
-- Container über eine REST-API abrufen
-- Routen zu einem Container abrufen
-- eine CSV-Datei herunterladen
-- Messdaten mit pandas einlesen
-- Grenzwertverletzungen berechnen
-- Diagramme erstellen
-- eine Karte erzeugen
-- einen PDF-Bericht erstellen
+Am Ende kannst du:
+- erklären, was eine Funktion ist und wie man sie definiert und aufruft
+- Parameter und Rückgabewerte einsetzen
+- den Unterschied zwischen lokalen und globalen Variablen (Scope) beschreiben
+- verstehen, was Callback-Funktionen sind
+- den Aufbau einer ereignisgesteuerten, prozeduralen App nachvollziehen
+
+Die zugehörige Datei ist:
+
+```text
+apps/live_monitor.py
+```
 
 ---
 
 ## 1. Was bauen wir?
 
-Im Logistik-Kontext entstehen bei einem Containertransport viele Messdaten.
+Bei einem laufenden Transport sendet ein Sensor regelmässig Messpunkte. Jeder Messpunkt ist eine kleine JSON-Nachricht, zum Beispiel:
 
-Typische Daten sind:
+```json
+{"timestamp": "2026-06-05 13:57:46", "lat": 47.0002, "lon": 8.2581, "temp": 24, "hum": 72}
+```
 
-- Zeitstempel
-- geografische Koordinaten
-- Temperatur
-- Feuchtigkeit
+Der Live-Monitor empfängt diese Nachrichten über **MQTT**, sammelt sie und prüft jede Temperatur gegen die Grenzwerte:
 
-Diese Daten helfen dabei, einen Transport später zu prüfen. Unsere Retrospektive-App beantwortet Fragen wie:
-
-- War die Temperatur immer im erlaubten Bereich?
-- War die Feuchtigkeit zu hoch?
-- Wo auf der Route gab es Probleme?
-- Wie kann man die Ergebnisse verständlich darstellen?
+```python
+temp_min = 15
+temp_max = 26
+```
 
 ---
 
@@ -48,73 +49,27 @@ Du solltest bereits diese Grundlagen kennen:
 - Bedingungen und Schleifen
 - einfache Dateioperationen
 
-Dieses Tutorial baut darauf auf und zeigt, wie man mit Funktionen grössere Programme sauber strukturiert.
+Dieses Tutorial baut darauf auf und zeigt, wie man mit Funktionen Programme sauber strukturiert.
 
 ---
 
 ## 3. Warum Funktionen?
 
-Am Anfang schreibt man Python-Code oft einfach von oben nach unten. Das nennt man **sequenziellen Code**.
-
-**Ohne Funktionen** würde unsere App so aussehen:
+Eine Funktion ist ein benannter Block Code, den man wiederverwenden kann. Sie bündelt eine Aufgabe an einer Stelle.
 
 ```python
-# Schritt 1: Container abrufen
-response = requests.get("https://example.com/containers", timeout=10)
-data = response.json()
-containers = data.get("containers", [])
+def say_hello():
+    print("Hallo")
 
-# Schritt 2: Container anzeigen und auswählen
-print("Verfügbare Container")
-for number, item in enumerate(containers, start=1):
-    print(f"{number}. {item}")
-index = int(input("Bitte Nummer wählen: ")) - 1
-selected_container = containers[index]
-
-# Schritt 3: Routen abrufen
-response = requests.get(f"https://example.com/containers/{selected_container}/routes", timeout=10)
-data = response.json()
-routes = data.get("routes", [])
-
-# Schritt 4: Routen anzeigen und auswählen
-print("Verfügbare Routen")
-for number, item in enumerate(routes, start=1):
-    print(f"{number}. {item}")
-index = int(input("Bitte Nummer wählen: ")) - 1
-selected_route = routes[index]
-
-# Schritt 5: CSV herunterladen
-# ... und so weiter, über hunderte Zeilen
+say_hello()   # ruft die Funktion auf
 ```
 
-Probleme dabei:
+Wichtig: Die `def`-Zeile **definiert** die Funktion nur. Ausgeführt wird der Code erst beim **Aufruf**.
 
-- Der Code wird sehr lang und schwer zu lesen.
-- Die Auswahllogik (Schritte 2 und 4) ist fast identisch – aber doppelt geschrieben.
-- Wenn man die Auswahl verbessern will, muss man es an zwei Stellen ändern.
-- Ein Fehler in Zeile 200 ist schwer zu finden.
+Im Live-Monitor gibt es zwei zentrale Funktionen:
 
-**Mit Funktionen** sieht die gleiche Logik so aus:
-
-```python
-def fetch_containers():
-    ...
-
-def fetch_routes(container):
-    ...
-
-def choose_item(title, items):
-    ...
-
-def main():
-    containers = fetch_containers()
-    selected_container = choose_item("Verfügbare Container", containers)
-
-    routes = fetch_routes(selected_container)
-    selected_route = choose_item("Verfügbare Routen", routes)
-```
-
-`main()` liest sich fast wie ein Plan auf Deutsch. Jede Funktion hat einen klaren Namen und eine einzige Aufgabe.
+- `on_connect(...)` – wird ausgeführt, sobald die Verbindung zum Broker steht
+- `on_message(...)` – wird ausgeführt, sobald eine neue Nachricht ankommt
 
 ---
 
@@ -128,13 +83,10 @@ Eingabe → Verarbeitung → Ausgabe
 
 Das nennt man das **EVA-Prinzip**.
 
-Beispiel:
-
-```python
-def calculate_statistics(data_frame):   # Eingabe: eine Tabelle
-    avg = data_frame["temperature"].mean()  # Verarbeitung: berechnen
-    return avg                          # Ausgabe: Ergebnis zurückgeben
-```
+Bei `on_message` ist das gut sichtbar:
+- **Eingabe:** die empfangene Nachricht (`message`)
+- **Verarbeitung:** JSON auslesen, Temperatur prüfen
+- **Ausgabe:** Anzeige im Terminal
 
 Bevor du eine Funktion schreibst, stelle dir immer diese drei Fragen:
 
@@ -165,141 +117,146 @@ Wichtig: Die Funktion wird erst ausgeführt, wenn sie aufgerufen wird. Die `def`
 
 ---
 
-## 6. Rückgabewerte mit `return`
+## 6. Parameter: Informationen an eine Funktion übergeben
 
-Viele Funktionen sollen ein Ergebnis zurückgeben. Dafür verwenden wir `return`.
-
-```python
-def add_numbers():
-    result = 3 + 4
-    return result
-
-number = add_numbers()
-print(number)  # Ausgabe: 7
-```
-
-In unserer App verwenden wir das zum Beispiel so:
-
-```python
-containers = fetch_containers()
-```
-
-Die Funktion `fetch_containers()` holt Daten vom Server und gibt eine Liste zurück. Diese Liste wird in `containers` gespeichert und kann danach weiterverwendet werden.
-
----
-
-## 7. Parameter: Informationen übergeben
-
-Manchmal braucht eine Funktion Informationen von aussen. Diese Informationen nennt man **Parameter**.
+Funktionen können Werte von aussen erhalten. Diese Werte heissen **Parameter**.
 
 ```python
 def greet(name):
     print(f"Hallo {name}")
 
 greet("Lena")   # Ausgabe: Hallo Lena
-greet("Jonas")  # Ausgabe: Hallo Jonas
 ```
 
-Wenn man `greet("Lena")` aufruft, passiert intern folgendes:
-
-```
-Aufruf:     greet("Lena")
-              ↓
-Definition: def greet(name):
-              ↓
-Zuweisung:  name = "Lena"
-              ↓
-Ausführung: print(f"Hallo {name}")  →  "Hallo Lena"
-```
-
-Der Wert `"Lena"` wird beim Aufruf übergeben und steht innerhalb der Funktion als `name` zur Verfügung.
-
-In unserer App brauchen wir Parameter zum Beispiel hier:
+Im Live-Monitor bekommt `on_connect` mehrere Parameter von der MQTT-Bibliothek übergeben:
 
 ```python
-def fetch_routes(container):
-    response = requests.get(f"{BASE_URL}/containers/{container}/routes")
-    ...
-```
-
-Die Funktion kann für jeden beliebigen Container aufgerufen werden:
-
-```python
-routes_a = fetch_routes("CONT-001")
-routes_b = fetch_routes("CONT-002")
-```
-
-Das ist ein zentraler Vorteil von Parametern: **Wiederverwendbarkeit**.
-
----
-
-## 8. Standardwerte für Parameter
-
-Parameter können einen Standardwert haben. Dann ist die Angabe beim Aufruf optional.
-
-```python
-def greet(name, language="de"):
-    if language == "de":
-        print(f"Hallo {name}")
+def on_connect(client, userdata, flags, rc, properties=None):
+    if rc == 0:
+        print("Verbunden mit dem Broker")
+        client.subscribe(topic)
+        print(f"Abonniert: {topic}")
     else:
-        print(f"Hello {name}")
-
-greet("Lena")           # Ausgabe: Hallo Lena (Standardwert wird verwendet)
-greet("Lena", "en")     # Ausgabe: Hello Lena (eigener Wert wird übergeben)
+        print("Verbindung fehlgeschlagen")
 ```
 
-In unserer App könnte `choose_item` so verwendet werden:
+Der wichtigste Parameter ist `rc` (return code). `rc == 0` bedeutet „Verbindung erfolgreich". Der Parameter `client` ist das MQTT-Objekt; darüber abonnieren wir mit `client.subscribe(topic)` das Topic.
 
-```python
-def choose_item(title, items, start=1):
-    for number, item in enumerate(items, start=start):
-        print(f"{number}. {item}")
-    ...
-```
-
-Standardwerte eignen sich gut für Optionen, die meistens gleich bleiben, aber gelegentlich angepasst werden müssen.
+Der Parameter `properties=None` hat einen **Standardwert**. Dadurch ist die Angabe beim Aufruf optional.
 
 ---
 
-## 9. Scope: Wo gelten Variablen?
+## 7. Callback-Funktionen: Funktionen als Werte
 
-Eine wichtige Frage beim Arbeiten mit Funktionen ist: **Wo ist eine Variable sichtbar?**
-
-Das nennt man **Scope** (deutsch: Gültigkeitsbereich).
-
-**Lokale Variablen** existieren nur innerhalb der Funktion:
+Eine Besonderheit im Live-Monitor: Wir rufen `on_connect` und `on_message` **nicht selbst** auf. Stattdessen geben wir sie der MQTT-Bibliothek **als Wert**:
 
 ```python
-def calculate():
-    result = 42  # lokale Variable
-    return result
-
-print(result)  # ❌ Fehler! result existiert hier nicht
+client.on_connect = on_connect
+client.on_message = on_message
 ```
 
-**Globale Variablen** werden ausserhalb von Funktionen definiert und sind überall sichtbar:
+Beachte: Hier stehen **keine Klammern** hinter `on_connect`. Wir übergeben die Funktion selbst, nicht ihr Ergebnis. Die Bibliothek ruft sie später automatisch auf, wenn das passende Ereignis eintritt.
+
+Solche Funktionen nennt man **Callback-Funktionen**: „Ruf mich zurück, wenn etwas passiert."
+
+```text
+Verbindung steht   → Bibliothek ruft on_connect auf
+Nachricht kommt an → Bibliothek ruft on_message auf
+```
+
+Das ist **ereignisgesteuerte Programmierung**.
+
+---
+
+## 8. Scope: lokale und globale Variablen
+
+Eine wichtige Frage ist: **Wo ist eine Variable sichtbar?** Das nennt man **Scope**.
+
+**Globale Variablen** stehen ausserhalb von Funktionen und sind überall sichtbar. Im Live-Monitor sind das die Konfigurationswerte:
 
 ```python
-BASE_URL = "https://example.com"  # globale Variable
+broker = "fl-17-240.zhdk.cloud.switch.ch"
+port = 9001
+topic = "migros/grp3/message"
+temp_min = 15
+temp_max = 26
+```
 
-def fetch_containers():
-    response = requests.get(f"{BASE_URL}/containers")  # ✅ BASE_URL ist sichtbar
+Wir sammeln die empfangenen Messpunkte in einem globalen DataFrame:
+
+```python
+live_data = pd.DataFrame()
+```
+
+Damit `on_message` diese globale Variable **verändern** darf, müssen wir das ausdrücklich erlauben:
+
+```python
+def on_message(client, userdata, message):
+    global live_data
+    ...
+    live_data = pd.concat([live_data, new_row], ignore_index=True)
+```
+
+Das Schlüsselwort `global` sagt Python: „Verwende die globale Variable `live_data`, nicht eine neue lokale." Ohne `global` würde innerhalb der Funktion eine eigene, lokale Variable entstehen.
+
+> **Faustregel:** Globale Variablen sparsam einsetzen, vor allem für Konstanten. `global` zum Schreiben ist hier nötig, weil die Nachrichten nacheinander eintreffen und sich der Zustand aufbauen muss.
+
+---
+
+## 9. Die Funktion `on_message` Schritt für Schritt
+
+```python
+def on_message(client, userdata, message):
+    global live_data
+
+    # 1. Nachricht von Bytes in Text umwandeln
+    payload = message.payload.decode()
+
+    # 2. JSON-Text in ein Dictionary umwandeln
+    try:
+        data = json.loads(payload)
+    except json.JSONDecodeError:
+        print("Nachricht ist kein gültiges JSON")
+        return
+
+    # 3. Nachricht als neue Zeile anhängen
+    new_row = pd.DataFrame([data])
+    live_data = pd.concat([live_data, new_row], ignore_index=True)
+
+    # 4. Letzte Zeile holen
+    last_row = live_data.iloc[-1]
+
+    # 5. Prüfen, ob eine Temperatur enthalten ist
+    if "temp" not in live_data.columns:
+        print("Keine Temperatur in den Daten gefunden")
+        print(data)
+        return
+
+    # 6. Temperatur bewerten
+    temperature = float(last_row["temp"])
     ...
 ```
 
-In unserer App definieren wir Konstanten global, damit alle Funktionen darauf zugreifen können:
+Drei Konzepte werden hier sichtbar:
+
+- **`try`/`except`:** Falls die Nachricht kein gültiges JSON ist, fängt `except json.JSONDecodeError` den Fehler ab, statt das Programm abstürzen zu lassen.
+- **Frühes `return`:** Ist die Nachricht ungültig oder fehlt die Temperatur, beendet `return` die Funktion sofort. Der Rest wird übersprungen.
+- **f-Strings:** Für lesbare Ausgaben, z. B. `f"Anzahl empfangene Messpunkte: {len(live_data)}"`.
+
+---
+
+## 10. Rückgabewerte mit `return`
+
+`return` beendet eine Funktion und gibt optional einen Wert zurück.
 
 ```python
-BASE_URL = "https://fl-17-240.zhdk.cloud.switch.ch"
-TEMP_MIN = 15
-TEMP_MAX = 26
-HUM_MAX = 72
+def add_numbers(a, b):
+    return a + b
+
+summe = add_numbers(3, 4)   # summe ist 7
 ```
 
-**Faustregel:** Verwende globale Variablen nur für Konstanten (Werte, die sich nie ändern). Alles andere sollte als Parameter übergeben werden.
-
-> **Warum ist das wichtig?**
-> Wenn eine Funktion nur über ihre Parameter mit dem Rest des Programms kommuniziert, ist sie viel einfacher zu verstehen und zu testen. Du siehst auf einen Blick, welche Informationen hineingehen und was herauskommt.
+Im Live-Monitor nutzen wir `return` vor allem zum **frühzeitigen Beenden** (siehe oben). Die Callback-Funktionen geben keinen Wert an uns zurück – sie informieren über Ereignisse und geben etwas aus.
 
 ---
 
