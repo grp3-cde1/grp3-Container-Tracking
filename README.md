@@ -63,7 +63,7 @@ python -m apps.retrospective_oop.app
 python apps/live_monitor.py
 ```
 
-Der Live-Monitor verbindet sich mit dem MQTT-Broker und zeigt eingehende Messpunkte an. Damit Daten ankommen, muss parallel ein Transport laufen. Mit dem Simulator (separates Teilprojekt):
+Der Live-Monitor verbindet sich mit dem MQTT-Broker und zeigt eingehende Messpunkte an. Damit Daten ankommen, muss parallel ein Transport laufen. Mit dem Simulator:
 
 ```bash
 python simulator/simulator.py simulator/data/luzern-horw.geojson -c simulator/config-switch.ini
