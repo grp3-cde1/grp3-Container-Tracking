@@ -1,149 +1,120 @@
-# Reportlab
+# ReportLab – PDF-Berichte erstellen
 
-Vorarbeit:
-- Reportlab installieren
-- Mit OS den Ordner Reports erstellen (/ Prüfen ob er existiert)
-```python
-os.makedirs("reports", exist_ok=True)
-```
+`reportlab` erzeugt den PDF-Bericht der Retrospektive-App mit Titel, Metadaten-Tabelle, Kennzahlen, Fazit, Diagrammen und Routengrafik.
 
-## Erste PDF-Datei mit ReportLab erstellen
-Um zu prüfen, ob `ReportLab` korrekt installiert und importiert wurde, erstellen wir zuerst ein leeres PDF-Dokument.
+Bezug zum Code: `OutputCreator.create_pdf_report()`.
 
-Dafür werden am Ende des Codes folgende Zeilen eingefügt:
+---
+
+## 1. Importe
 
 ```python
-pdf_path = "reports/test_report.pdf"
-doc = SimpleDocTemplate(pdf_path, pagesize=A4)
-doc.build([])
-
-print(f"PDF gespeichert: {pdf_path}")
-```
-
-Zuerst wird mit `pdf_path` der Speicherort der Datei festgelegt.  
-Die PDF wird im zuvor erstellten Ordner `reports` gespeichert und erhält den Namen `test_report.pdf`.
-
-Anschliessend wird mit `SimpleDocTemplate(...)` das Grundgerüst der PDF-Datei erstellt.  
-Mit `pagesize=A4` wird festgelegt, dass das Dokument im A4-Format erzeugt wird.
-
-Die Methode `doc.build([])` erstellt schliesslich die PDF-Datei. Da die Liste aktuell leer ist, enthält das Dokument noch keinen Inhalt und dient nur als Funktionstest.
-
-Über die `print(...)`-Ausgabe kann in der Konsole überprüft werden, ob die Datei erfolgreich gespeichert wurde.
-
-## Ersten Inhalt in die PDF einfügen
-Nachdem die PDF-Erstellung grundsätzlich funktioniert, kann nun der erste Inhalt ergänzt werden.  
-Dafür werden zunächst zusätzliche Module importiert:
-
-```python
-from reportlab.platypus import Paragraph
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import Spacer
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import cm
-
+from reportlab.platypus import (
+    SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle, PageBreak,
+)
 ```
 
-`Paragraph` wird verwendet, um Textblöcke in die PDF einzufügen.  
-Mit `getSampleStyleSheet()` stellt ReportLab mehrere vordefinierte Textstile bereit, zum Beispiel für Titel oder normalen Fliesstext.
+---
 
-Der bisherige Testcode wird anschliessend erweitert:
+## 2. Ein PDF-Dokument vorbereiten
 
 ```python
-pdf_path = "reports/test_report.pdf"
-doc = SimpleDocTemplate(pdf_path, pagesize=A4)
+document = SimpleDocTemplate(
+    str(pdf_path),
+    pagesize=A4,
+    rightMargin=1.5 * cm,
+    leftMargin=1.5 * cm,
+    topMargin=1.5 * cm,
+    bottomMargin=1.5 * cm,
+)
+```
 
+`SimpleDocTemplate` ist das Grundgerüst. `str(pdf_path)` wandelt den `Path` in Text um.
+
+---
+
+## 3. Die „story": Inhalte sammeln
+
+In ReportLab sammelt man alle Inhalte in einer Liste namens `story`:
+
+```python
 styles = getSampleStyleSheet()
 story = []
 
-story.append(Paragraph("Retrospektiver Bericht", styles["Title"]))
-
-doc.build(story)
-
-print(f"PDF gespeichert: {pdf_path}")
+story.append(Paragraph("Retrospektiver Transportbericht", styles["Title"]))
+story.append(Spacer(1, 0.4 * cm))
 ```
 
-Mit `styles = getSampleStyleSheet()` werden die Standard-Formatvorlagen geladen.  
-Danach wird mit `story = []` eine leere Liste erstellt. In dieser Liste werden alle Inhalte gesammelt, die später in der PDF angezeigt werden sollen.
+- `Paragraph(text, stil)` ist ein Textabschnitt.
+- `styles["Title"]`, `styles["Heading2"]`, `styles["Normal"]` sind vordefinierte Stile.
+- `Spacer` fügt vertikalen Abstand ein.
 
-Die Zeile
+---
+
+## 4. Eine Tabelle einfügen
 
 ```python
-story.append(Paragraph("Retrospektiver Bericht", styles["Title"]))
+metadata = [
+    ["Container", container],
+    ["Route", route],
+    ["Start", start_time.strftime("%d.%m.%Y %H:%M")],
+    ["Ende", end_time.strftime("%d.%m.%Y %H:%M")],
+]
+metadata_table = Table(metadata, colWidths=[5 * cm, 10 * cm])
+metadata_table.setStyle(
+    TableStyle([
+        ("BACKGROUND", (0, 0), (0, -1), colors.lightgrey),
+        ("GRID", (0, 0), (-1, -1), 0.4, colors.grey),
+    ])
+)
+story.append(metadata_table)
 ```
 
-fügt den ersten Text in die PDF ein.  
-Dabei wird mit `Paragraph(...)` ein Textabschnitt erstellt und mit `styles["Title"]` als Titel formatiert.
+`strftime("%d.%m.%Y %H:%M")` formatiert ein Datum lesbar.
 
-Am Ende wird nicht mehr `doc.build([])`, sondern `doc.build(story)` verwendet.  
-Dadurch wird die PDF mit dem Inhalt aus der Liste `story` erstellt.
+---
 
-Das Ergebnis ist eine PDF-Datei, die nun nicht mehr leer ist, sondern bereits eine erste Überschrift enthält. 
-
-## Dynamische Daten für den Bericht verwenden
-Statt feste Beispielwerte in die PDF einzutragen, können direkt die Daten aus dem bestehenden Skript verwendet werden.  
-Dadurch wird der Bericht automatisch mit den Informationen der ausgewählten Route und des ausgewählten Containers gefüllt.
-
-Ausserdem wird auch der Dateiname der PDF angepasst, damit nicht mehr jede Datei `test_report.pdf` heisst, sondern den Namen der gewählten Route enthält.
-
-Der PDF-Block wird dafür wie folgt erweitert:
+## 5. Bilder (Diagramme) einfügen
 
 ```python
-pdf_path = f"reports/{chosen_route}_report.pdf"
-doc = SimpleDocTemplate(pdf_path, pagesize=A4)
-
-styles = getSampleStyleSheet()
-story = []
-
-start_time = track_df["timestamp"].min()
-end_time = track_df["timestamp"].max()
-
-date_str = start_time.strftime("%d.%m.%Y")
-time_range_str = f"{start_time.strftime('%H:%M')} - {end_time.strftime('%H:%M')}"
-
-story.append(Paragraph("Retrospektiver Bericht", styles["Title"]))
-story.append(Spacer(1, 0.5 * cm))
-story.append(Paragraph(f"Route: {chosen_route}", styles["Normal"]))
-story.append(Paragraph(f"Datum: {date_str}", styles["Normal"]))
-story.append(Paragraph(f"Uhrzeit: {time_range_str}", styles["Normal"]))
-story.append(Paragraph(f"Container: {chosen_container}", styles["Normal"]))
-
-doc.build(story)
-
-print(f"PDF gespeichert: {pdf_path}")
+story.append(Paragraph("Temperaturverlauf", styles["Heading2"]))
+story.append(Image(str(charts["temperature"]), width=16 * cm, height=6 * cm))
 ```
 
-Zuerst wird mit
+`charts` ist das Dictionary mit den Pfaden zu den von matplotlib erstellten PNG-Dateien.
+
+---
+
+## 6. Seitenumbruch
 
 ```python
-pdf_path = f"reports/{chosen_route}_report.pdf"
+story.append(PageBreak())
 ```
 
-der Dateiname der PDF dynamisch erstellt.  
-Dadurch trägt jede erzeugte PDF den Namen der ausgewählten Route und wird im Ordner `reports` gespeichert.
+---
 
-Anschliessend werden Start- und Endzeit der Messdaten aus dem DataFrame `track_df` bestimmt:
+## 7. PDF erzeugen
 
 ```python
-start_time = track_df["timestamp"].min()
-end_time = track_df["timestamp"].max()
+document.build(story)
 ```
 
-`start_time` enthält dabei den frühesten Zeitstempel, `end_time` den spätesten.
+`build()` schreibt alle Elemente der `story` nacheinander in die PDF-Datei. Der Dateiname enthält Container, Route und einen Zeitstempel, z. B. `reports/grp3_kriens-horw_2026-06-05_13-57_report.pdf`.
 
-Mit `strftime(...)` werden diese Zeitstempel anschliessend in ein lesbares Format umgewandelt:
+---
 
-```python
-date_str = start_time.strftime("%d.%m.%Y")
-time_range_str = f"{start_time.strftime('%H:%M')} - {end_time.strftime('%H:%M')}"
+## Zusammenfassung
+
+```text
+SimpleDocTemplate  → das PDF-Grundgerüst
+getSampleStyleSheet → vordefinierte Textstile
+Paragraph / Spacer → Text und Abstände
+Table / TableStyle → Tabellen
+Image              → Diagramme einfügen
+PageBreak          → neue Seite
+document.build()   → PDF erzeugen
 ```
-
-`date_str` enthält das Datum, während `time_range_str` den Zeitraum der Route als Uhrzeitbereich darstellt.
-
-Danach werden die Informationen mit mehreren `Paragraph`-Elementen zur Liste `story` hinzugefügt.  
-Neben der Überschrift werden nun auch Route, Datum, Uhrzeit und Container direkt aus den vorhandenen Daten in die PDF übernommen. `Spacer` fügt einen vertikalen Abstand zwischen den Elementen ein.
-
-Am Ende wird mit `doc.build(story)` die PDF-Datei mit diesen Inhalten erzeugt.
-
-Auf diese Weise wird aus der bisherigen Test-PDF ein erster einfacher aber dynamischer Bericht.
-
-Wie folgt wird dieser nun aussehen
-[Beispielbericht öffnen](../example_reports/report_1.pdf)
