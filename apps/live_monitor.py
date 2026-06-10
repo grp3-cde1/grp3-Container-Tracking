@@ -11,6 +11,7 @@ topic = "migros/grp3/message"
 # Temperatur-Grenzwerte festlegen
 temp_min = 15
 temp_max = 26
+hum_max = 72
 
 # Farbe für Grenzüberschreitungen im Terminal
 green = "\033[92m"

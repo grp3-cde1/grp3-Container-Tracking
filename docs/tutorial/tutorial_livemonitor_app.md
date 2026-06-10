@@ -36,6 +36,7 @@ Der Live-Monitor empfängt diese Nachrichten über **MQTT**, sammelt sie und pr�
 ```python
 temp_min = 15
 temp_max = 26
+hum_max = 72
 ```
 
 ---
@@ -66,10 +67,15 @@ say_hello()   # ruft die Funktion auf
 
 Wichtig: Die `def`-Zeile **definiert** die Funktion nur. Ausgeführt wird der Code erst beim **Aufruf**.
 
-Im Live-Monitor gibt es zwei zentrale Funktionen:
+Der Live-Monitor besteht aus mehreren Funktionen mit je einer klaren Aufgabe:
 
-- `on_connect(...)` – wird ausgeführt, sobald die Verbindung zum Broker steht
-- `on_message(...)` – wird ausgeführt, sobald eine neue Nachricht ankommt
+```text
+evaluate_measurement(...)  → einen Messwert bewerten und farbig ausgeben
+on_connect(...)            → reagiert, sobald die Verbindung steht
+on_message(...)            → reagiert auf jede neue Nachricht
+create_client(...)         → erstellt den MQTT-Client
+main()                     → startet das Programm
+```
 
 ---
 
@@ -142,13 +148,75 @@ def on_connect(client, userdata, flags, rc, properties=None):
 
 Der wichtigste Parameter ist `rc` (return code). `rc == 0` bedeutet „Verbindung erfolgreich". Der Parameter `client` ist das MQTT-Objekt; darüber abonnieren wir mit `client.subscribe(topic)` das Topic.
 
-Der Parameter `properties=None` hat einen **Standardwert**. Dadurch ist die Angabe beim Aufruf optional.
+---
+
+## 7. Standardwerte für Parameter
+
+Ein Parameter kann einen **Standardwert** haben. Dann ist die Angabe beim Aufruf optional.
+
+Im Live-Monitor nutzen wir das in der Hilfsfunktion `evaluate_measurement`:
+
+```python
+def evaluate_measurement(name, value, unit, low=None, high=None):
+    too_low = low is not None and value < low
+    too_high = high is not None and value > high
+
+    if too_low or too_high:
+        print(red + f"WARNUNG: {name} ausserhalb des Bereichs: {value} {unit}" + reset)
+    else:
+        print(green + f"{name} OK: {value} {unit}" + reset)
+```
+
+`low` und `high` haben den Standardwert `None`. Dadurch kann dieselbe Funktion für unterschiedliche Messwerte verwendet werden:
+
+```python
+# Temperatur hat einen unteren UND einen oberen Grenzwert
+evaluate_measurement("Temperatur", temperature, "°C", low=temp_min, high=temp_max)
+
+# Feuchtigkeit hat nur einen oberen Grenzwert – low bleibt None
+evaluate_measurement("Feuchtigkeit", humidity, "%", high=hum_max)
+```
+
+Das ist ein zentraler Vorteil von Funktionen mit Standardwerten: **Wiederverwendbarkeit**. Wir schreiben die Grenzwert-Logik nur einmal.
 
 ---
 
-## 7. Callback-Funktionen: Funktionen als Werte
+## 8. Rückgabewerte mit `return`
 
-Eine Besonderheit im Live-Monitor: Wir rufen `on_connect` und `on_message` **nicht selbst** auf. Stattdessen geben wir sie der MQTT-Bibliothek **als Wert**:
+`return` beendet eine Funktion und gibt optional einen Wert zurück.
+
+```python
+def add_numbers(a, b):
+    return a + b
+
+summe = add_numbers(3, 4)   # summe ist 7
+```
+
+Im Live-Monitor erstellt `create_client()` den MQTT-Client und **gibt ihn zurück**:
+
+```python
+def create_client():
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, transport="websockets")
+    client.on_connect = on_connect
+    client.on_message = on_message
+    return client
+```
+
+Aufruf:
+
+```python
+client = create_client()
+```
+
+Der zurückgegebene Client wird in der Variablen `client` gespeichert und danach weiterverwendet.
+
+Frühes `return` nutzen wir in `on_message`, um eine Funktion vorzeitig zu beenden.
+
+---
+
+## 9. Callback-Funktionen: Funktionen als Werte
+
+Eine Besonderheit im Live-Monitor: Wir rufen `on_connect` und `on_message` **nicht selbst** auf. Stattdessen geben wir sie dem Client **als Wert**:
 
 ```python
 client.on_connect = on_connect
@@ -168,7 +236,7 @@ Das ist **ereignisgesteuerte Programmierung**.
 
 ---
 
-## 8. Scope: lokale und globale Variablen
+## 10. Scope: lokale und globale Variablen
 
 Eine wichtige Frage ist: **Wo ist eine Variable sichtbar?** Das nennt man **Scope**.
 
@@ -180,6 +248,7 @@ port = 9001
 topic = "migros/grp3/message"
 temp_min = 15
 temp_max = 26
+hum_max = 72
 ```
 
 Wir sammeln die empfangenen Messpunkte in einem globalen DataFrame:
@@ -203,77 +272,21 @@ Das Schlüsselwort `global` sagt Python: „Verwende die globale Variable `live_
 
 ---
 
-## 9. Die Funktion `on_message` Schritt für Schritt
-
-```python
-def on_message(client, userdata, message):
-    global live_data
-
-    # 1. Nachricht von Bytes in Text umwandeln
-    payload = message.payload.decode()
-
-    # 2. JSON-Text in ein Dictionary umwandeln
-    try:
-        data = json.loads(payload)
-    except json.JSONDecodeError:
-        print("Nachricht ist kein gültiges JSON")
-        return
-
-    # 3. Nachricht als neue Zeile anhängen
-    new_row = pd.DataFrame([data])
-    live_data = pd.concat([live_data, new_row], ignore_index=True)
-
-    # 4. Letzte Zeile holen
-    last_row = live_data.iloc[-1]
-
-    # 5. Prüfen, ob eine Temperatur enthalten ist
-    if "temp" not in live_data.columns:
-        print("Keine Temperatur in den Daten gefunden")
-        print(data)
-        return
-
-    # 6. Temperatur bewerten
-    temperature = float(last_row["temp"])
-    ...
-```
-
-Drei Konzepte werden hier sichtbar:
-
-- **`try`/`except`:** Falls die Nachricht kein gültiges JSON ist, fängt `except json.JSONDecodeError` den Fehler ab, statt das Programm abstürzen zu lassen.
-- **Frühes `return`:** Ist die Nachricht ungültig oder fehlt die Temperatur, beendet `return` die Funktion sofort. Der Rest wird übersprungen.
-- **f-Strings:** Für lesbare Ausgaben, z. B. `f"Anzahl empfangene Messpunkte: {len(live_data)}"`.
-
----
-
-## 10. Rückgabewerte mit `return`
-
-`return` beendet eine Funktion und gibt optional einen Wert zurück.
-
-```python
-def add_numbers(a, b):
-    return a + b
-
-summe = add_numbers(3, 4)   # summe ist 7
-```
-
-Im Live-Monitor nutzen wir `return` vor allem zum **frühzeitigen Beenden** (siehe oben). Die Callback-Funktionen geben keinen Wert an uns zurück – sie informieren über Ereignisse und geben etwas aus.
-
----
-
-## 10. Docstrings: Funktionen dokumentieren
+## 11. Docstrings: Funktionen dokumentieren
 
 Gute Funktionen enthalten eine kurze Beschreibung – einen **Docstring**.
 
 ```python
-def calculate_violations(data_frame):
+def evaluate_measurement(name, value, unit, low=None, high=None):
     """
-    Prüft Messwerte auf Grenzwertverletzungen.
+    Gibt eine farbige Statuszeile für einen Messwert aus.
 
     Parameter:
-        data_frame: pandas DataFrame mit Spalten temperature und humidity
-
-    Rückgabe:
-        DataFrame mit zusätzlichen Boolean-Spalten für Verletzungen
+        name:  Bezeichnung des Messwerts, z. B. "Temperatur"
+        value: gemessener Wert
+        unit:  Einheit, z. B. "°C"
+        low:   unterer Grenzwert (optional)
+        high:  oberer Grenzwert (optional)
     """
     ...
 ```
@@ -290,83 +303,7 @@ Eine Funktion ohne Docstring ist wie ein Knopf ohne Beschriftung.
 
 ---
 
-## 11. Funktionen rufen Funktionen auf
-
-Eine Funktion kann andere Funktionen aufrufen. Das ist ein zentrales Muster in grösseren Programmen.
-
-```python
-def main():
-    containers = fetch_containers()       # ruft fetch_containers auf
-    container = choose_item("Container", containers)  # ruft choose_item auf
-
-    routes = fetch_routes(container)      # ruft fetch_routes auf
-    route = choose_item("Routen", routes) # choose_item wird wiederverwendet!
-```
-
-`main()` ist hier die **übergeordnete Funktion**, die andere Funktionen koordiniert. Sie selbst enthält kaum Logik – sie delegiert Aufgaben.
-
-Das ist wie ein Dirigent: Er spielt kein Instrument selbst, aber er weiss, wer was wann spielen soll.
-
----
-
-## 12. Funktionsstruktur der Retrospektive-App
-
-Unsere App wird in diese Funktionen aufgeteilt. Jede hat genau eine Hauptaufgabe.
-
-```
-fetch_containers()              → Liste der verfügbaren Container holen
-fetch_routes(container)         → Routen zu einem Container holen
-choose_item(title, items)       → Auswahl im Terminal anzeigen
-download_csv(container, route)  → CSV-Datei herunterladen und speichern
-read_csv_file(file_path)        → CSV-Datei mit pandas einlesen
-calculate_violations(df)        → Grenzwertverletzungen berechnen
-calculate_statistics(df)        → Kennzahlen zusammenfassen
-create_charts(df, container, route) → Diagramme erstellen
-create_map(df, container, route)    → Karte erzeugen
-create_pdf_report(...)          → PDF-Bericht erstellen
-main()                          → Alle Schritte verbinden
-```
-
----
-
-## 13. Die main-Funktion: Alles zusammensetzen
-
-`main()` verbindet alle Funktionen. Sie enthält keine eigene Logik – sie delegiert.
-
-```python
-def main():
-    # Container auswählen
-    containers = fetch_containers()
-    selected_container = choose_item("Verfügbare Container", containers)
-    if selected_container is None:
-        return
-
-    # Route auswählen
-    routes = fetch_routes(selected_container)
-    selected_route = choose_item("Verfügbare Routen", routes)
-    if selected_route is None:
-        return
-
-    # Daten laden und auswerten
-    csv_path = download_csv(selected_container, selected_route)
-    data_frame = read_csv_file(csv_path)
-    data_frame = calculate_violations(data_frame)
-    statistics = calculate_statistics(data_frame)
-
-    # Ausgaben erstellen
-    chart_path = CHARTS_DIR / f"{selected_container}_{selected_route}_temp.png"
-    create_temperature_chart(data_frame, chart_path)
-    create_map(data_frame, selected_container, selected_route)
-    pdf_path = create_pdf_report(selected_container, selected_route, statistics, chart_path)
-
-    print(f"\nBericht erstellt: {pdf_path}")
-```
-
-Lies `main()` von oben nach unten: Es liest sich fast wie eine Schritt-für-Schritt-Anleitung auf Deutsch.
-
----
-
-## 14. Programmstart
+## 12. Programmstart mit `if __name__ == "__main__"`
 
 Am Ende der Datei steht:
 
@@ -375,82 +312,48 @@ if __name__ == "__main__":
     main()
 ```
 
-Das bedeutet: Die App startet nur dann, wenn diese Datei direkt ausgeführt wird – nicht, wenn sie von einem anderen Modul importiert wird.
+Das bedeutet: Die App startet nur dann, wenn diese Datei **direkt** ausgeführt wird. Nicht, wenn sie von einem anderen Modul importiert wird. So kann man die Funktionen (z. B. `evaluate_measurement`) auch importieren und testen, ohne dass sofort eine Verbindung aufgebaut wird.
 
 ---
 
-## 15. Übungsaufgaben
+## 13. Übungsaufgaben
 
-### Aufgabe 1 – Einfache Funktion mit Rückgabewert
+### Aufgabe 1 – Funktion mit Rückgabewert
+Schreibe eine Funktion `format_temperature(value)`, die `"22.3 °C"` für die Eingabe `22.3` zurückgibt.
 
-Schreib eine Funktion `format_temperature(value)`, die eine Temperatur als formatierten String zurückgibt.
+### Aufgabe 2 – Standardwerte verstehen
+Erkläre, warum `evaluate_measurement` mit `low=None, high=None` arbeitet. Was passiert beim Aufruf `evaluate_measurement("Feuchtigkeit", 80, "%", high=72)` Schritt für Schritt?
 
-Erwartetes Ergebnis:
-```python
-format_temperature(22.3)   # "22.3 °C"
-format_temperature(15.0)   # "15.0 °C"
-```
-
----
-
-### Aufgabe 2 – EVA-Analyse
-
-Analysiere diese Funktion nach dem EVA-Prinzip. Was ist Eingabe, Verarbeitung und Ausgabe?
-
-```python
-def summarize(values):
-    total = sum(values)
-    average = total / len(values)
-    return average
-```
-
----
-
-### Aufgabe 3 – Parameter und Standardwerte
-
-Erweitere `format_temperature` um einen optionalen Parameter `unit` mit Standardwert `"°C"`.
-
-```python
-format_temperature(22.3)         # "22.3 °C"
-format_temperature(72.1, "°F")   # "72.1 °F"
-```
-
----
-
-### Aufgabe 4 – Scope verstehen
-
-Was gibt dieses Programm aus? Warum?
+### Aufgabe 3 – Scope
+Was gibt dieser Code aus und warum?
 
 ```python
 x = 10
 
-def add_five():
+def change():
     x = 20
-    return x + 5
+    return x
 
-result = add_five()
-print(x)       # Was steht hier?
-print(result)  # Was steht hier?
+print(change())
+print(x)
 ```
 
+### Aufgabe 4 – Eine weitere Bewertung ergänzen
+Die Nachrichten enthalten auch GPS-Koordinaten (`lat`, `lon`). Ergänze `on_message`, sodass zusätzlich die Position des letzten Messpunkts ausgegeben wird. Überlege: Brauchst du dafür `evaluate_measurement` oder eine neue Funktion?
+
+### Aufgabe 5 – Callback verstehen
+Erkläre in eigenen Worten, warum bei `client.on_message = on_message` keine Klammern stehen.
+
 ---
 
-### Aufgabe 5 – Funktion mit Docstring
+## 14. Was du gelernt hast
 
-Schreib eine Funktion `count_violations(data_frame)`, die die Anzahl Zeilen zurückgibt, in denen `any_violation` den Wert `True` hat. Füge einen vollständigen Docstring hinzu.
-
----
-
-## 16. Was du gelernt hast
-
-In diesem Tutorial hast du gelernt:
-
-- warum Funktionen Code übersichtlicher, testbarer und wiederverwendbar machen
 - wie man Funktionen definiert und aufruft
-- wie man Parameter und Rückgabewerte einsetzt
-- wie man Standardwerte für Parameter verwendet
-- was Scope bedeutet und warum er wichtig ist
-- wie man Funktionen mit Docstrings dokumentiert
-- wie das EVA-Prinzip (Eingabe → Verarbeitung → Ausgabe) beim Planen hilft
-- wie Funktionen andere Funktionen aufrufen und wie `main()` als Koordinator wirkt
-- wie man diese Konzepte in einem echten Projekt anwendet
+- wie Parameter, Standardwerte und Rückgabewerte funktionieren
+- wie eine Funktion durch Standardwerte wiederverwendbar wird (`evaluate_measurement`)
+- was lokale und globale Variablen sind und wozu `global` dient
+- was Callback-Funktionen sind und wie ereignisgesteuerte Programme arbeiten
+- wie ein prozeduraler Ablauf mit `create_client()`, `main()` und `loop_forever()` aufgebaut ist
+- wie man JSON-Nachrichten robust mit `try`/`except` verarbeitet
+
+Im nächsten Schritt wechseln wir zur Retrospektive-App und arbeiten mit Bibliotheken und echten Daten.
