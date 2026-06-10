@@ -20,13 +20,13 @@ Die Datei `apps/retrospective_app.py` ist die ursprüngliche, funktionsbasierte 
 - Python 3.10 oder höher
 - `pip`
 - Internetzugang (REST-API und MQTT-Broker des Cloud-Service)
-- für Live-Daten: ein laufender Transport (z. B. über den Simulator)
+- für Live-Daten: ein laufender Transport (Simulator)
 
 ## Installation
 
 ```bash
 # 1. Repository klonen
-git clone <repository-url>
+git clone https://github.com/grp3-cde1/grp3-Container-Tracking.git
 cd grp3-Container-Tracking
 
 # 2. virtuelle Umgebung erstellen und aktivieren
