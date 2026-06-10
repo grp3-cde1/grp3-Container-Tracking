@@ -1,39 +1,103 @@
-# Container-Tracking
+# Container-Tracking (Gruppe 3)
 
-## Projektübersicht
+## Zweck
 
-Im Rahmen dieser Challenge entwickelt unser Team mehrere Python-Applikationen zur Analyse, Visualisierung und Bereitstellung von Container-Transportdaten.
+Dieses Projekt entwickelt zwei Python-Applikationen zur Auswertung und Visualisierung von Container-Transportdaten aus dem Logistik-Kontext. Während eines Transports entstehen Messdaten (Zeitstempel, GPS-Koordinaten, Temperatur, Feuchtigkeit). Diese Daten werden retrospektiv und live ausgewertet.
 
-Der fachliche Kontext stammt aus der Logistik: Während eines Containertransports entstehen laufend Daten wie Zeitstempel, geografische Koordinaten, Temperatur und Feuchtigkeit. Diese Daten sind für Transportunternehmen wichtig, um die korrekte Durchführung eines Transports nachzuweisen, vergangene Transporte nachvollziehen zu können und aktuelle Transporte live zu überwachen.
+Das Projekt dient zugleich als **Tutorial für Python-Einsteiger** mit Grundkenntnissen.
 
-Ziel des Projekts ist es, auf Basis dieser Daten verschiedene Werkzeuge in Python zu entwickeln.
+## Die zwei Applikationen und ihre didaktische Einordnung
 
----
+| Applikation | Zweck | Paradigma / Lernfokus |
+|---|---|---|
+| **Live-Monitor** (`apps/live_monitor.py`) | laufenden Transport live über MQTT überwachen | **Funktionen / prozedurale Programmierung** |
+| **Retrospektive-App** (`apps/retrospective_oop/`) | abgeschlossenen Transport analysieren und Bericht erstellen | **Objektorientierte Programmierung (OOP)** |
 
-## Projektziele
-- Transportdaten aus CSV-Dateien verarbeiten
-- abgeschlossene Transporte retrospektiv analysieren
-- Live-Daten eines aktuellen Transports verarbeiten
-- Transportdaten verständlich visualisieren
+Die Datei `apps/retrospective_app.py` ist die ursprüngliche, funktionsbasierte Fassung der Retrospektive-App. Sie bleibt als Vergleichs- und Ausgangspunkt für das OOP-Tutorial erhalten.
 
----
+## Voraussetzungen
 
-## Teilapplikationen
+- Python 3.10 oder höher
+- `pip`
+- Internetzugang (REST-API und MQTT-Broker des Cloud-Service)
+- für Live-Daten: ein laufender Transport (z. B. über den Simulator)
 
-### 1. Retrospektive Applikation
-Diese Anwendung analysiert einen bereits abgeschlossenen Transport. Eine Route wird aus einer CSV-Datei geladen und anschliessend ausgewertet.
+## Installation
 
-Funktionen:
-- Einlesen einer Transport-Route
-- Anzeige wichtiger Messwerte
-- Erkennung von Temperatur-Grenzwertüberschreitungen
-- Einfache Kennzahlen
-- Übersicht über den Transportverlauf
+```bash
+# 1. Repository klonen
+git clone <repository-url>
+cd grp3-Container-Tracking
 
-### 2. Live-Monitoring Applikation
-Diese Anwendung zeigt Live-Daten eines laufenden Transports an.
+# 2. virtuelle Umgebung erstellen und aktivieren
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
 
-Mögliche Funktionen:
-- Live Map
-- laufende Anzeige von Temperatur oder Feuchtigkeit
-- Warnung bei Grenzwertüberschreitung
+# 3. Abhängigkeiten installieren
+pip install -r requirements.txt
+```
+
+Die `requirements.txt` enthält: `requests`, `pandas`, `folium`, `matplotlib`, `reportlab`, `paho-mqtt`.
+
+## Start
+
+### Retrospektive-App (funktionsbasierte Fassung)
+
+```bash
+python apps/retrospective_app.py
+```
+
+Die App führt durch die Auswahl von Container und Route, lädt die CSV-Datei und erzeugt Diagramme, eine Karte (`maps/`) und einen PDF-Bericht (`reports/`).
+
+### Retrospektive-App (OOP-Fassung)
+
+Das Paket `retrospective_oop/` enthält die Klasse `RetrospectiveApp`. Um es zu starten, muss man aus dem Projektordner folgenden Befehl ausführen:
+
+```bash
+python -m apps.retrospective_oop.app
+```
+
+### Live-Monitor
+
+```bash
+python apps/live_monitor.py
+```
+
+Der Live-Monitor verbindet sich mit dem MQTT-Broker und zeigt eingehende Messpunkte an. Damit Daten ankommen, muss parallel ein Transport laufen. Mit dem Simulator (separates Teilprojekt):
+
+```bash
+python simulator/simulator.py simulator/data/luzern-horw.geojson -c simulator/config-switch.ini
+```
+
+## Projektstruktur
+
+```text
+grp3-Container-Tracking/
+├── README.md
+├── requirements.txt
+├── data/                          # heruntergeladene CSV-Dateien
+├── apps/
+│   ├── live_monitor.py            # Live-Monitor (Funktionen, MQTT)
+│   ├── retrospective_app.py       # Retrospektive (funktionsbasiert)
+│   └── retrospective_oop/         # Retrospektive (OOP)
+│       ├── __init__.py
+│       ├── config.py              # Pfade, URL, Grenzwerte
+│       ├── api_client.py          # REST + CSV-Download
+│       ├── data_processor.py      # CSV einlesen + Analyse
+│       ├── output_creator.py      # Diagramme, Karte, PDF
+│       └── app.py                 # Ablaufsteuerung
+└── docs/
+    ├── projektplan.md
+    └── tutorial/                  # Tutorials
+```
+
+Die Ordner `maps/`, `charts/` und `reports/` entstehen automatisch beim ersten Lauf der Retrospektive-App.
+
+## Tutorial
+
+Das vollständige Tutorial liegt in `docs/tutorial/`. Empfohlene Reihenfolge:
+
+1. `tutorial_vorgehen.md` – Überblick
+2. `tutorial_livemonitor_app.md` – Funktionen am Live-Monitor
+3. `tutorial_retrospektive_app_oop.md` – OOP an der Retrospektive-App
+4. `tutorial_bibliotheken/bibliotheken.md` – die verwendeten Bibliotheken
