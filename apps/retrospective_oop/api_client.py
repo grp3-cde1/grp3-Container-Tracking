@@ -9,32 +9,6 @@ import requests
 
 from .config import BASE_URL, DATA_DIR
 
-class ApiClient:
-    """
-    Klasse für die Kommunikation mit dem Webservice.
-    """
-
-    def __init__(self, base_url=BASE_URL):
-        """
-        Erstellt ein neues ApiClient-Objekt.
-
-        Parameter:
-            base_url: Basis-URL des Webservice
-        """
-
-        self.base_url = base_url
-
-    """
-API-Zugriff für die objektorientierte Retrospective-App.
-
-Diese Datei enthält die Klasse ApiClient.
-Sie ruft Container und Routen vom Webservice ab und lädt CSV-Dateien herunter.
-"""
-
-import requests
-
-from .config import BASE_URL, DATA_DIR
-
 
 class ApiClient:
     """
