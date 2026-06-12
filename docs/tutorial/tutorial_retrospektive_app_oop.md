@@ -100,7 +100,7 @@ Der zweite Arbeitsbereich ist die Datenverarbeitung. Dazu gehören das Einlesen 
 
 Der dritte Arbeitsbereich ist die Ausgabe der Ergebnisse. Dazu gehören Diagramme, Karten und PDF-Berichte. Deshalb erstellen wir dafür die Klasse `OutputCreator`.
 
-Zusätzlich brauchen wir eine Klasse, welche den Gesamtablauf koordiniert. Diese Klasse heisst `App`.
+Zusätzlich brauchen wir eine Klasse, welche den Gesamtablauf koordiniert. Diese Klasse heisst `RetrospectiveApp`.
 
 ---
 
@@ -123,7 +123,7 @@ Jede Klasse hat eine klare Verantwortung.
 
 `OutputCreator` beinhaltet alle Ausgaben. Sie erstellt Diagramme, eine interaktive Karte und den PDF-Bericht.
 
-`APP` ist die Hauptklasse. Sie steuert den gesamten Ablauf und verbindet die anderen Klassen miteinander.
+`RetrospectiveApp` ist die Hauptklasse. Sie steuert den gesamten Ablauf und verbindet die anderen Klassen miteinander.
 
 Diese Aufteilung folgt dem Prinzip der klaren Verantwortlichkeiten. Jede Klasse soll möglichst nur für einen Aufgabenbereich zuständig sein.
 
@@ -591,7 +591,7 @@ Wichtig ist die Trennung:
 self.api_client
 ```
 
-ist der Speicherplatz im aktuellen `RetrospectiveAp`-Objekt.
+ist der Speicherplatz im aktuellen `RetrospectiveApp`-Objekt.
 
 ```python
 ApiClient()
@@ -660,7 +660,7 @@ Python übergibt das Objekt automatisch an `self`.
 
 ---
 
-### 9.6.9. Kurz zusammengefasst
+### 9.6.7. Kurz zusammengefasst
 
 `self` verbindet eine Methode mit dem Objekt, zu dem sie gehört.
 
