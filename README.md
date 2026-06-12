@@ -100,4 +100,4 @@ Das vollständige Tutorial liegt in `docs/tutorial/`. Empfohlene Reihenfolge:
 1. [tutorial_vorgehen.md](docs/tutorial/tutorial_vorgehen.md) – Überblick
 2. [tutorial_livemonitor_app.md](docs/tutorial/tutorial_livemonitor_app.md) – Funktionen am Live-Monitor
 3. [tutorial_retrospektive_app_oop.md](docs/tutorial/tutorial_retrospektive_app_oop.md) – OOP an der Retrospektive-App
-4. [tutorial_bibliotheken.md](docs/tutorial/tutorial_bibliotheken/bibliotheken.md) – die verwendeten Bibliotheken 
+4. [bibliotheken.md](docs/tutorial/tutorial_bibliotheken/bibliotheken.md) – die verwendeten Bibliotheken 
