@@ -215,6 +215,7 @@ pdf_path = self.output_creator.create_pdf_report(
     selected_route,
     selected_statistics,
     charts,
+    data_frame,
 )
 ```
 
@@ -233,7 +234,7 @@ Auch hier, besuch gerne [MatPlotLib-Tutorial](https://matplotlib.org/)
 
 ---
 
-## 101 Verwendung in `RetrospectiveApp`
+## 11 Verwendung in `RetrospectiveApp`
 
 Der `OutputCreator` wird in der Hauptklasse `RetrospectiveApp` erstellt.
 
