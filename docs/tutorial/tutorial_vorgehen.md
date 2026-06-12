@@ -23,7 +23,7 @@ Diese Inhalte werden im Tutorial nicht im Detail neu eingeführt, sondern voraus
 Falls du eines der oben genannten Themen lernen oder repetieren willst empfehlen wir folgende Webseite:
 https://pyflo.net
 
-### Schritt 1: Live-Monitor – Funktionen und prozedurale Programmierung
+## Schritt 1: Live-Monitor – Funktionen und prozedurale Programmierung
 
 Wir starten mit der kleineren App, dem Live-Monitor. Er empfängt Live-Daten eines laufenden Transports über MQTT und zeigt sie im Terminal an.
 
@@ -55,7 +55,7 @@ Gleichzeitig dient dieser Schritt dazu, die Stärken, aber auch die Grenzen eine
 
 → [tutorial_bibliotheken/bibliotheken.md](tutorial_bibliotheken/bibliotheken.md)
 
-### Schritt 3: Retrospektive-App (OOP) – objektorientierte Programmierung
+## Schritt 3: Retrospektive-App (OOP) – objektorientierte Programmierung
 
 Zuletzt überführen wir die funktionsbasierte Retrospektive-App in eine objektorientierte Struktur. Dabei wird gezeigt, wie man ein Programm übersichtlicher, wartbarer und erweiterbarer macht.
 
