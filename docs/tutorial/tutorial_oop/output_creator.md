@@ -53,7 +53,7 @@ In der funktionsbasierten Version gab es einzelne Funktionen wie:
 ```python
 create_charts(data_frame, container, route)
 create_map(data_frame, container, route)
-create_pdf_report(container, route, statistics, charts)
+create_pdf_report(container, route, statistics, charts, data_frame)
 ```
 
 Diese Funktionen gehörten logisch zusammen, weil sie alle Resultate der Analyse sichtbar machen.
