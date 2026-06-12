@@ -154,8 +154,8 @@ Sie wird verwendet um den Container und die Route auszuwählen.
 Vereinfacht:
 
 ```python
-selected_container = self.choose_item(containers, "Container auswählen")
-selected_route = self.choose_item(routes, "Route auswählen")
+selected_container = self.choose_item("Container auswählen", containers)
+selected_route = self.choose_item("Route auswählen", routes)
 ```
 
 Die Methode gehört zur Hauptklasse, weil sie Teil des App-Ablaufs ist.
