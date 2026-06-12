@@ -186,7 +186,7 @@ Am Ende gibt die Methode den Pfad zur gespeicherten HTML-Karte zurück.
 Beispiel:
 
 ```text
-maps/grp3_kriens-horw_map.html
+maps/grp3_kriens-horw_2026-06-05_13-57_map.html
 ```
 
 Für eine genauere Beschreibung des Inhalts der Methode verweisen wir gerne auf das [folium-Tutorial](https://python-visualization.github.io/folium/latest/)
