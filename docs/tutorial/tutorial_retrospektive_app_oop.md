@@ -109,7 +109,6 @@ Zusätzlich brauchen wir eine Klasse, welche den Gesamtablauf koordiniert. Diese
 Wir teilen die App in vier zentrale Klassen auf:
 
 ```text
-Config
 ApiClient
 DataProcessor
 OutputCreator
@@ -117,8 +116,6 @@ RetrospectiveApp
 ```
 
 Jede Klasse hat eine klare Verantwortung.
-
-`Config` beinhaltet alles was konfiguriert werden muss. Standardwerte, Adressen usw.
 
 `ApiClient` kümmert sich um alles, was mit dem Server zu tun hat. Sie ruft Container und Routen ab und lädt CSV-Dateien herunter.
 

@@ -55,19 +55,18 @@ Gleichzeitig dient dieser Schritt dazu, die Stärken, aber auch die Grenzen eine
 
 → `tutorial_bibliotheken/bibliotheken.md`
 
-## Schritt 3: Strukturierung und objektorientierte Programmierung Live-Monitor App
+### Schritt 3: Retrospektive-App (OOP) – objektorientierte Programmierung
 
-Im zweiten Schritt wird die erste Version überarbeitet und in eine klarere, besser strukturierte Form überführt. Dabei steht die Frage im Mittelpunkt, wie ein Programm so aufgebaut werden kann, dass es übersichtlicher, wartbarer und leichter erweiterbar wird.
+Zuletzt überführen wir die funktionsbasierte Retrospektive-App in eine objektorientierte Struktur. Dabei wird gezeigt, wie man ein Programm übersichtlicher, wartbarer und erweiterbarer macht.
 
-In diesem Zusammenhang werden zentrale Konzepte der objektorientierten Programmierung eingeführt und direkt auf das bestehende Projekt angewendet. Das Tutorial zeigt damit nicht nur theoretische Grundideen, sondern macht sichtbar, welchen praktischen Nutzen OOP in einem realen Anwendungskontext haben kann.
-
-### Behandelte Themen
-
+**Behandelte Themen**
 - Klassen und Objekte
 - Attribute und Methoden
 - `self` und `__init__()`
 - Module und Pakete (`__init__.py`, relative Imports)
 - Strukturierung nach Verantwortlichkeiten
+
+→ `tutorial_retrospektive_app_oop.md`
 
 ## Warum diese Reihenfolge?
 
