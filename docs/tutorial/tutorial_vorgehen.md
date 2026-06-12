@@ -53,7 +53,7 @@ Gleichzeitig dient dieser Schritt dazu, die Stärken, aber auch die Grenzen eine
   - `folium`
   - `reportlab`
 
-→ `tutorial_bibliotheken/bibliotheken.md` 
+→ [tutorial_bibliotheken/bibliotheken.md](tutorial_bibliotheken/bibliotheken.md)
 
 ### Schritt 3: Retrospektive-App (OOP) – objektorientierte Programmierung
 
@@ -66,7 +66,7 @@ Zuletzt überführen wir die funktionsbasierte Retrospektive-App in eine objekto
 - Module und Pakete (`__init__.py`, relative Imports)
 - Strukturierung nach Verantwortlichkeiten
 
-→ `tutorial_retrospektive_app_oop.md`
+→ [tutorial_retrospektive_app_oop.md](tutorial_retrospektive_app_oop.md)
 
 ## Warum diese Reihenfolge?
 
