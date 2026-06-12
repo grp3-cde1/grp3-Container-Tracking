@@ -35,7 +35,7 @@ Wir starten mit der kleineren App, dem Live-Monitor. Er empfängt Live-Daten ein
 - prozeduraler Programmablauf
 - MQTT-Grundlagen mit `paho-mqtt`
 
-→ `tutorial_livemonitor_app.md`
+→ [tutorial_livemonitor_app.md](tutorial_livemonitor_app.md)
 
 ## Schritt 2: Einfache Single-File-Version Retrospektive App
 
@@ -53,7 +53,7 @@ Gleichzeitig dient dieser Schritt dazu, die Stärken, aber auch die Grenzen eine
   - `folium`
   - `reportlab`
 
-→ `tutorial_bibliotheken/bibliotheken.md`
+→ `tutorial_bibliotheken/bibliotheken.md` 
 
 ### Schritt 3: Retrospektive-App (OOP) – objektorientierte Programmierung
 
