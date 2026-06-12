@@ -55,7 +55,3 @@ from pathlib import Path     # einzelnes Element
 - [Matplotlib](matplotlib.md)
 - [Folium](folium.md)
 - [ReportLab](reportlab.md)
-- [OS und Pathlib](os.md)
-
-**Exkurs**
-- [GeoPandas](geopandas.md) – eine Alternative zur Kartendarstellung (im Projekt nicht eingesetzt)
